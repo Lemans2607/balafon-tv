@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { useAlertStore } from "../../store/alertStore";
+import { useScheduleStore } from "../../store/scheduleStore";
 import { useVmixStore, VMIX_STATUS_META } from "../../store/vmixStore";
 import { useNow } from "../../hooks/useNow";
 import { formatClock } from "../../utils/time";
@@ -47,6 +48,7 @@ export function StaffShell() {
   const setRole = useAppStore((s) => s.setRole);
   const alerts = useAlertStore((s) => s.alerts);
   const vmixStatus = useVmixStore((s) => s.status);
+  const dataSource = useScheduleStore((s) => s.source);
   const now = useNow(1000);
   const location = useLocation();
   const navigate = useNavigate();
@@ -186,6 +188,24 @@ export function StaffShell() {
               {ROLE_LABEL[role]}
             </span>
             <div className="ml-auto flex items-center gap-3">
+              <span
+                className="hidden items-center gap-1.5 rounded-lg border border-ink-600 bg-ink-800 px-2.5 py-1.5 text-[10.5px] font-extrabold uppercase tracking-wide md:flex"
+                style={{
+                  color: dataSource === "api" ? "#00F5A0" : "#9CA3AF",
+                  borderColor: dataSource === "api" ? "rgba(0,245,160,0.35)" : undefined,
+                }}
+                title={
+                  dataSource === "api"
+                    ? "Grilles chargées depuis l’API Django"
+                    : "Mode démo — catalogue embarqué + localStorage"
+                }
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${dataSource === "api" ? "bg-studio" : "bg-mist-dark"}`}
+                  aria-hidden
+                />
+                {dataSource === "api" ? "API Django" : "Démo locale"}
+              </span>
               <span
                 className="hidden items-center gap-1.5 rounded-lg border border-ink-600 bg-ink-800 px-2.5 py-1.5 text-[11px] font-bold sm:flex"
                 style={{ color: vMeta.color }}

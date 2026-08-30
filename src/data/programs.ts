@@ -28,7 +28,7 @@ export const OFF_AIR_PROGRAM_ID = "p-offair";
 export const RERUN_PROGRAM_ID = "p-rediff";
 export const CLIPS_PROGRAM_ID = "p-clips";
 
-const GENRE_TO_CATEGORY: Record<string, ProgramCategory> = {
+export const GENRE_TO_CATEGORY: Record<string, ProgramCategory> = {
   infotainment: "news",
   talkshow: "talk",
   magazine: "talk",

@@ -55,8 +55,10 @@ src/
   pages/public/         PublicHome, PublicGuide, PublicReplay, ProgramDetails
   pages/staff/          StudioDashboard, AdminBuilder, DirecteurKanban(+GridsPage),
                         RegieControl, ProgramLibrary, AlertCenter, GridHistory, SettingsPage
-  store/                appStore, scheduleStore, alertStore, vmixStore (Zustand + persist)
+  store/                appStore, scheduleStore (source demo|api + hydrateFromApi), alertStore, vmixStore
+  services/             backend.ts (REST Django + fallback démo), realtime.ts (WebSocket Channels)
   hooks/                useNow (horloge simulée), useCurrentProgram, usePlayheadX, useMediaQuery
+backend/                scaffold Django : docker-compose, settings, charger_emissions_demo, verifier_bdd
   data/                 emissions_reelles_balafon_tv.json + programmes + grilles générées (7 jours)
   utils/                time.ts, validation.ts, planbyAdapter.ts (API Django ↔ Planby, catalogue ↔ Planby)
   types/                types métier + métadonnées sémantiques
@@ -121,11 +123,37 @@ src/
 Flux vidéo (lecteur factice), liaison vMix (statuts, journal, synchro), notifications
 « temps réel » (état local). Rien n’est émis vers un serveur.
 
+## Intégration backend Django (dès maintenant)
+
+Le frontend est **déjà câblé** sur le contrat d’API du guide d’intégration — il bascule
+automatiquement entre les deux modes, sans écran vide :
+
+| Mode | Condition | Source des grilles |
+|---|---|---|
+| **Démo locale** | `VITE_API_URL` vide ou backend injoignable | Catalogue embarqué + localStorage |
+| **API Django** | `GET {VITE_API_URL}/grilles/?statut=validee` répond | Hydratation via `depuisApiBackend` (adaptateur Planby) |
+
+- `src/services/backend.ts` — client REST (grilles, chaînes, JWT) avec timeout et fallback.
+- `src/services/realtime.ts` — WebSocket Django Channels (`VITE_WS_URL`) : les alertes reçues
+  sont injectées dans l’alertStore (acquittement en Régie, historique tracé).
+- Badge « Démo locale / API Django » dans la topbar Studio + test de connexion live dans
+  **Studio → Paramètres** (latence, nombre de grilles, hydratation en un clic).
+
+### Scaffold backend fourni (`backend/`)
+
+- `docker-compose.yml` — PostgreSQL 16 + Redis 7 (channel layer).
+- `config/settings_bdd.py` — DATABASES, CHANNEL_LAYERS, DRF + SimpleJWT, CORS, Swagger.
+- `comptes/management/commands/verifier_bdd.py` — `python manage.py verifier_bdd`.
+- `programmation/management/commands/charger_emissions_demo.py` — charge les **vraies
+  émissions Balafon TV** (`backend/data/emissions_reelles_balafon_tv.json`) dans la grille
+  de la semaine en cours, fuseau Africa/Douala.
+- Démarrage complet : `backend/README.md` (Phases 1 et 2bis du guide).
+
 ## Prochaines étapes (production)
 
-1. **Backend Django + PostgreSQL** : modèles `Program`, `ScheduleItem`, `Grid`, `Alert`,
-   `AuditLog` ; API REST (`VITE_API_BASE_URL`) remplaçant les stores mock.
-2. **WebSocket** (`VITE_WS_URL`) : push des alertes Régie et de l’état « en direct ».
-3. **vMix réel** : la façade `vmixService` (connect/getStatus/sync/sendChange/ack) pointe déjà
-   vers les futurs endpoints REST `:8088/API` et WebSocket `:8099` (voir `.env.example`).
-4. **Fuseau Africa/Douala** côté serveur (conversion ISO → WAT stricte) et CDN pour les affiches.
+1. **Déployer le backend** : Gunicorn/Daphne + Nginx, SSL, `.env` sécurisé (voir `backend/.env.example`).
+2. **vMix réel** : passer `VMIX_MODE=reel` avec l’URL régie `:8088/API` — la façade
+   `vmixService` (connect/getStatus/sync/sendChange/ack) est déjà alignée sur ce contrat.
+3. **Authentification JWT** en production (écran de login branché sur `POST /api/auth/token/`).
+4. **Fuseau Africa/Douala** strict côté serveur et CDN pour les affiches.
+5. **CI/CD + monitoring** : GitHub Actions, Sentry, alertes Slack.

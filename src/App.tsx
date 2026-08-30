@@ -25,6 +25,8 @@ import { useAlertStore } from "./store/alertStore";
 import { useAppStore } from "./store/appStore";
 import { buildSeedData } from "./data/schedules";
 import { todayKey } from "./utils/time";
+import { fetchGrillesValidees, isBackendConfigured } from "./services/backend";
+import { connectAlertStream } from "./services/realtime";
 
 /* ============================================================
    ErrorBoundary — aucun écran blanc : toute erreur runtime
@@ -179,18 +181,55 @@ function AnimatedOutlet() {
 }
 
 function Root() {
-  /* Amorçage : données de démonstration + re-seed quotidien */
+  /* ============================================================
+     Amorçage :
+     1. démo locale (catalogue embarqué) — toujours disponible ;
+     2. si VITE_API_URL répond → hydratation depuis Django
+        (GET /api/grilles/?statut=validee, adaptateur Planby) ;
+     3. si VITE_WS_URL est défini → flux d’alertes temps réel
+        (Django Channels) injecté dans l’alertStore.
+     ============================================================ */
   useEffect(() => {
-    try {
-      useScheduleStore.getState().ensureSeed();
-      const alertState = useAlertStore.getState();
-      if (alertState.alerts.length === 0) alertState.setAlerts(buildSeedData().alerts);
-      /* Garde-fou : une date sélectionnée obsolète revient sur aujourd’hui */
-      const app = useAppStore.getState();
-      if (app.selectedDate < todayKey()) app.setSelectedDate(todayKey());
-    } catch (e) {
-      console.error("[BALAFON + GUIDE] Erreur d’amorçage des données :", e);
-    }
+    let stopStream: (() => void) | undefined;
+    let cancelled = false;
+
+    const boot = async () => {
+      try {
+        useScheduleStore.getState().ensureSeed();
+        const alertState = useAlertStore.getState();
+        if (alertState.alerts.length === 0) alertState.setAlerts(buildSeedData().alerts);
+        /* Garde-fou : une date sélectionnée obsolète revient sur aujourd’hui */
+        const app = useAppStore.getState();
+        if (app.selectedDate < todayKey()) app.setSelectedDate(todayKey());
+
+        if (isBackendConfigured()) {
+          const grilles = await fetchGrillesValidees();
+          if (!cancelled && grilles) {
+            useScheduleStore.getState().hydrateFromApi(grilles);
+            console.info("[BALAFON + GUIDE] EPG hydraté depuis l’API Django.");
+          }
+        }
+
+        stopStream = connectAlertStream((payload) => {
+          if (cancelled) return;
+          useAlertStore.getState().addAlert({
+            severity: payload.severite ?? "info",
+            title: payload.titre ?? payload.title ?? "Alerte temps réel",
+            message: payload.message ?? "Notification reçue du backend (WebSocket).",
+            source: payload.source ?? "system",
+            actionRequired: (payload.severite ?? "info") === "critical",
+          });
+        });
+      } catch (e) {
+        console.error("[BALAFON + GUIDE] Erreur d’amorçage des données :", e);
+      }
+    };
+
+    void boot();
+    return () => {
+      cancelled = true;
+      stopStream?.();
+    };
   }, []);
 
   return (
