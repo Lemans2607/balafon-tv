@@ -1,6 +1,6 @@
 import type { Program, ProgramCategory } from "../types";
 import { dureeParGenre, type EmissionCatalogueDemo } from "../utils/planbyAdapter";
-import catalogueJson from "./emissions_reelles_balafon_tv.json";
+import { CATALOGUE_EMISSIONS_BALAFON_TV } from "./emissions_reelles_balafon_tv";
 
 /* ============================================================
    Bibliothèque des programmes — Balafon TV
@@ -22,8 +22,7 @@ const POSTER_HITPARADE = "";
 const POSTER_SPORT = "";
 const POSTER_FEMME = "";
 
-export const CATALOGUE_EMISSIONS =
-  catalogueJson.catalogue_emissions_balafon_tv as EmissionCatalogueDemo[];
+export const CATALOGUE_EMISSIONS: EmissionCatalogueDemo[] = CATALOGUE_EMISSIONS_BALAFON_TV;
 
 export const OFF_AIR_PROGRAM_ID = "p-offair";
 export const RERUN_PROGRAM_ID = "p-rediff";
