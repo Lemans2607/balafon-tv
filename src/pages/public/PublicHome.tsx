@@ -45,10 +45,13 @@ export function PublicHome() {
     <div className="bg-ink-950">
       {/* ================= HERO DU DIRECT ================= */}
       <section className="relative flex min-h-[86vh] items-end overflow-hidden">
-        <div className="absolute inset-0" aria-hidden>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_70%_20%,rgba(255,61,0,0.14),transparent_60%)]" aria-hidden>
           <img
             src={backdrop}
             alt=""
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
             className="h-full w-full scale-105 object-cover opacity-60 transition-transform duration-[3000ms]"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/55 to-ink-950/20" />

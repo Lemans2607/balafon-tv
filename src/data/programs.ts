@@ -9,15 +9,18 @@ import catalogueJson from "./emissions_reelles_balafon_tv.json";
    - fiabilite "estime"   : émission réelle, horaire hypothétique (démo)
    ============================================================ */
 
-export const HERO_BACKDROP = "/images/hero-studio.jpg";
+export const HERO_BACKDROP =
+  "https://image.qwenlm.ai/generated-images/262b0e5c-1365-4816-93e2-4e2910d51604/_result.png";
 
-const POSTER_JOURNAL = "/images/poster-journal.jpg";
-const POSTER_DEBAT = "/images/poster-debat.jpg";
-const POSTER_CINE = "/images/poster-cine.jpg";
-const POSTER_CULTURE = "/images/poster-culture.jpg";
-const POSTER_HITPARADE = "/images/poster-hitparade.jpg";
-const POSTER_SPORT = "/images/poster-sport.jpg";
-const POSTER_FEMME = "/images/poster-femme.jpg";
+const POSTER_JOURNAL =
+  "https://image.qwenlm.ai/generated-images/17075206-3612-45f9-a9a3-0dfc2af9a0cf/_result.png";
+/* Affiches non générées → repli visuel SVG aux couleurs de la catégorie (ProgramPoster) */
+const POSTER_DEBAT = "";
+const POSTER_CINE = "";
+const POSTER_CULTURE = "";
+const POSTER_HITPARADE = "";
+const POSTER_SPORT = "";
+const POSTER_FEMME = "";
 
 export const CATALOGUE_EMISSIONS =
   catalogueJson.catalogue_emissions_balafon_tv as EmissionCatalogueDemo[];
