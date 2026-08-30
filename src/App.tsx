@@ -1,6 +1,6 @@
 import { Component, useEffect, type ReactNode } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { PublicNavbar } from "./components/layout/PublicNavbar";
@@ -109,25 +109,72 @@ function PublicShell() {
   );
 }
 
+/* ============================================================
+   Périmètre d'erreur par page : une page qui échoue affiche son
+   diagnostic dans le shell, sans casser la navigation.
+   ============================================================ */
+class PageBoundary extends Component<{ label: string; children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="mx-auto my-10 max-w-lg rounded-2xl border border-[#EF4444]/40 bg-[#111622] p-6">
+          <p className="text-[11px] font-extrabold uppercase tracking-widest text-[#9CA3AF]">
+            {this.props.label} — erreur d’affichage
+          </p>
+          <pre className="mt-3 max-h-32 overflow-auto rounded-lg border border-[#2A3142] bg-[#0B0E14] p-3 font-mono text-[11px] text-[#EF4444]">
+            {this.state.error.message}
+          </pre>
+          <button
+            type="button"
+            onClick={() => this.setState({ error: null })}
+            className="mt-4 rounded-lg bg-[#FF3D00] px-4 py-2 text-[12.5px] font-extrabold text-white"
+          >
+            Réessayer
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const page = (label: string, el: ReactNode) => (
+  <PageBoundary label={label}>{el}</PageBoundary>
+);
+
 function AnimatedOutlet() {
   const location = useLocation();
+  /* Transition simple (fondu d'entrée uniquement) : aucune animation de
+     sortie bloquante — la navigation ne peut jamais rester en suspens. */
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.24, ease: "easeOut" }}
-      >
-        <Routes location={location}>
-          <Route path="/tv/*" element={<PublicShell />} />
-          <Route path="/studio/*" element={<StaffShell />} />
-          <Route path="/demo" element={<DemoPage />} />
-          <Route path="*" element={<Navigate to="/tv" replace />} />
-        </Routes>
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      key={location.pathname}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: "easeOut" }}
+    >
+      <Routes location={location}>
+        <Route path="/tv/*" element={<PublicShell />} />
+        <Route path="/studio" element={<StaffShell />}>
+          <Route index element={page("Pilotage", <StudioDashboard />)} />
+          <Route path="admin" element={page("Constructeur EPG", <AdminBuilder />)} />
+          <Route path="directeur" element={page("Validation éditoriale", <DirecteurKanban />)} />
+          <Route path="regie" element={page("Régie", <RegieControl />)} />
+          <Route path="programmes" element={page("Bibliothèque", <ProgramLibrary />)} />
+          <Route path="grilles" element={page("Grilles", <GridsPage />)} />
+          <Route path="alertes" element={page("Alertes", <AlertCenter />)} />
+          <Route path="historique" element={page("Historique", <GridHistory />)} />
+          <Route path="parametres" element={page("Paramètres", <SettingsPage />)} />
+          <Route path="*" element={<Navigate to="/studio" replace />} />
+        </Route>
+        <Route path="/demo" element={page("Démo", <DemoPage />)} />
+        <Route path="*" element={<Navigate to="/tv" replace />} />
+      </Routes>
+    </motion.div>
   );
 }
 
