@@ -1,275 +1,239 @@
-import type { Program } from "../types";
+import type { Program, ProgramCategory } from "../types";
+import { dureeParGenre, type EmissionCatalogueDemo } from "../utils/planbyAdapter";
+import catalogueJson from "./emissions_reelles_balafon_tv.json";
 
-/* Visuels générés pour la démonstration (hébergés à distance).
-   En production : affiches servies par le CDN Balafon Media Group. */
-const IMG = {
-  hero: "https://image.qwenlm.ai/generated-images/e959fb07-5777-4c60-b672-71b4aca8cd1f/_result.png",
-  journal: "https://image.qwenlm.ai/generated-images/b901d63f-3958-426b-bef8-bb0a947b227b/_result.png",
-  debat: "https://image.qwenlm.ai/generated-images/96e01688-b79d-4ddd-aaf4-71c2386d3a9e/_result.png",
-  cine: "https://image.qwenlm.ai/generated-images/28bf46fa-5116-418c-9ec1-5cbaae2e39d3/_result.png",
-  culture: "https://image.qwenlm.ai/generated-images/b63f7684-67fb-4b2a-85e9-a91f3f2b7679/_result.png",
-  hitparade: "https://image.qwenlm.ai/generated-images/eacedcdc-4210-45aa-9a06-0e203e42fe95/_result.png",
-  sport: "https://image.qwenlm.ai/generated-images/298deb09-0abd-493d-ba63-3bd1f768294f/_result.png",
-  doc: "https://image.qwenlm.ai/generated-images/47640349-5518-4eac-9ab6-7f1783b07d60/_result.png",
-  femme: "https://image.qwenlm.ai/generated-images/a70bc2de-d0bd-41e9-90d6-96d6f32668c8/_result.png",
-};
+/* ============================================================
+   Bibliothèque des programmes — Balafon TV
+   Source : catalogue réel des émissions (emissions_reelles_balafon_tv.json)
+   - fiabilite "confirme" : horaire rapporté par balafon.media / presse
+   - fiabilite "estime"   : émission réelle, horaire hypothétique (démo)
+   ============================================================ */
 
-export const HERO_BACKDROP = IMG.hero;
+export const HERO_BACKDROP = "/images/hero-studio.jpg";
+
+const POSTER_JOURNAL = "/images/poster-journal.jpg";
+const POSTER_DEBAT = "/images/poster-debat.jpg";
+const POSTER_CINE = "/images/poster-cine.jpg";
+const POSTER_CULTURE = "/images/poster-culture.jpg";
+const POSTER_HITPARADE = "/images/poster-hitparade.jpg";
+const POSTER_SPORT = "/images/poster-sport.jpg";
+const POSTER_FEMME = "/images/poster-femme.jpg";
+
+export const CATALOGUE_EMISSIONS =
+  catalogueJson.catalogue_emissions_balafon_tv as EmissionCatalogueDemo[];
 
 export const OFF_AIR_PROGRAM_ID = "p-offair";
+export const RERUN_PROGRAM_ID = "p-rediff";
+export const CLIPS_PROGRAM_ID = "p-clips";
+
+const GENRE_TO_CATEGORY: Record<string, ProgramCategory> = {
+  infotainment: "news",
+  talkshow: "talk",
+  magazine: "talk",
+  talk: "talk",
+  musique: "music",
+  actualite: "news",
+  sport: "sport",
+  telerealite: "entertainment",
+  "mag-promo": "commercial",
+  serie: "series",
+};
+
+interface ProgrammeSpec {
+  id: string;
+  category: ProgramCategory;
+  posterUrl: string;
+  backdropUrl?: string;
+  subtitle: string;
+  tags: string[];
+  isReplayAvailable: boolean;
+}
+
+/* Enrichissement éditorial par émission (l'ordre suit le catalogue JSON) */
+const SPECS: Record<string, ProgrammeSpec> = {
+  "C'le Matin": {
+    id: "p-c-le-matin",
+    category: "news",
+    posterUrl: "",
+    backdropUrl: HERO_BACKDROP,
+    subtitle: "Lun–Ven · 07:00",
+    tags: ["matin", "direct", "info", "douala"],
+    isReplayAvailable: true,
+  },
+  "Faut Pas Zapper": {
+    id: "p-faut-pas-zapper",
+    category: "talk",
+    posterUrl: POSTER_DEBAT,
+    subtitle: "Lun–Ven · 18:00",
+    tags: ["talk", "débat", "société", "prime"],
+    isReplayAvailable: true,
+  },
+  "Femme au Contrôle": {
+    id: "p-femme-au-controle",
+    category: "talk",
+    posterUrl: POSTER_FEMME,
+    subtitle: "Lun–Jeu · 17:00 – 18:00",
+    tags: ["femme", "débat", "société"],
+    isReplayAvailable: true,
+  },
+  "Les Meufs": {
+    id: "p-les-meufs",
+    category: "talk",
+    posterUrl: POSTER_FEMME,
+    subtitle: "Vendredi · 17:00",
+    tags: ["femme", "couple", "lifestyle"],
+    isReplayAvailable: true,
+  },
+  "Top 25 Hit-Parade": {
+    id: "p-top-25-hit-parade",
+    category: "music",
+    posterUrl: POSTER_HITPARADE,
+    subtitle: "Samedi · 15:00",
+    tags: ["musique", "classement", "237"],
+    isReplayAvailable: true,
+  },
+  "C'le Weekend": {
+    id: "p-c-le-weekend",
+    category: "talk",
+    posterUrl: "",
+    backdropUrl: HERO_BACKDROP,
+    subtitle: "Samedi · 20:30 — présenté par Cyrille Bojiko",
+    tags: ["talk", "personnalités", "weekend"],
+    isReplayAvailable: true,
+  },
+  "Grand Plateau": {
+    id: "p-grand-plateau",
+    category: "news",
+    posterUrl: POSTER_JOURNAL,
+    subtitle: "Tous les jours · 19:30",
+    tags: ["journal", "actualité", "cameroun"],
+    isReplayAvailable: true,
+  },
+  Entretien: {
+    id: "p-entretien",
+    category: "talk",
+    posterUrl: "",
+    subtitle: "Mardi & Jeudi · 20:00",
+    tags: ["interview", "invité"],
+    isReplayAvailable: true,
+  },
+  "Moment de Sports": {
+    id: "p-moment-de-sports",
+    category: "sport",
+    posterUrl: POSTER_SPORT,
+    subtitle: "Lun, Mer & Ven · 16:00",
+    tags: ["sport", "football", "lions"],
+    isReplayAvailable: true,
+  },
+  "Télé-Zoom": {
+    id: "p-tele-zoom",
+    category: "culture",
+    posterUrl: POSTER_CULTURE,
+    subtitle: "Lun–Ven · 15:00",
+    tags: ["magazine", "culture", "après-midi"],
+    isReplayAvailable: true,
+  },
+  "Grand Déballage": {
+    id: "p-grand-deballage",
+    category: "entertainment",
+    posterUrl: "",
+    subtitle: "Dimanche · 20:00",
+    tags: ["téléréalité", "divertissement"],
+    isReplayAvailable: true,
+  },
+  "Télémarché": {
+    id: "p-telemarche",
+    category: "commercial",
+    posterUrl: "",
+    subtitle: "Lun–Ven · 13:00",
+    tags: ["startups", "commerce local"],
+    isReplayAvailable: false,
+  },
+  "Séries Cultes": {
+    id: "p-series-cultes",
+    category: "series",
+    posterUrl: POSTER_CINE,
+    subtitle: "Tous les jours · 21:00",
+    tags: ["série", "soirée", "fiction"],
+    isReplayAvailable: true,
+  },
+};
+
+function dureeEmission(e: EmissionCatalogueDemo): number {
+  if (e.heure_fin) {
+    const [dh, dm] = e.heure_debut.split(":").map(Number);
+    const [fh, fm] = e.heure_fin.split(":").map(Number);
+    return fh * 60 + fm - (dh * 60 + dm);
+  }
+  return dureeParGenre(e.genre);
+}
+
+function slugify(titre: string): string {
+  return titre
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
 export const SEED_PROGRAMS: Program[] = [
+  ...CATALOGUE_EMISSIONS.map((e) => {
+    const spec = SPECS[e.titre];
+    return {
+      id: spec?.id ?? `p-${slugify(e.titre)}`,
+      title: e.titre,
+      subtitle: spec?.subtitle,
+      description: e.description ?? "",
+      category: spec?.category ?? GENRE_TO_CATEGORY[e.genre] ?? "entertainment",
+      durationMinutes: dureeEmission(e),
+      posterUrl: spec?.posterUrl ?? "",
+      backdropUrl: spec?.backdropUrl,
+      status: "validated" as const,
+      isReplayAvailable: spec?.isReplayAvailable ?? true,
+      tags: spec?.tags ?? [e.genre],
+      fiabilite: e.fiabilite,
+    };
+  }),
+
+  /* ----- Blocs auxiliaires de continuité d'antenne ----- */
   {
-    id: "p-info-matin",
-    title: "Balafon Infos Matin",
-    subtitle: "L’essentiel de l’actualité au réveil",
+    id: RERUN_PROGRAM_ID,
+    title: "Rediffusion",
+    subtitle: "Reprise d’antenne",
     description:
-      "Le rendez-vous matinal de la rédaction : titres nationaux, revues de presse, météo de Douala et points de circulation.",
-    category: "news",
-    durationMinutes: 60,
-    posterUrl: "",
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["info", "matin", "rédaction"],
-  },
-  {
-    id: "p-grand-debat",
-    title: "Le Grand Débat",
-    subtitle: "Les grandes voix du Cameroun",
-    description:
-      "Chaque matin, des invités politiques, économiques et de la société civile confrontent leurs points de vue sur les sujets qui font l’actualité.",
-    category: "talk",
-    durationMinutes: 90,
-    posterUrl: IMG.debat,
-    backdropUrl: IMG.debat,
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["débat", "politique", "société"],
-  },
-  {
-    id: "p-femme",
-    title: "Femme au Contrôle",
-    subtitle: "Leadership au féminin",
-    description:
-      "Format court et percutant : une femme qui fait bouger le Cameroun partage son parcours, ses combats et ses conseils.",
-    category: "talk",
-    durationMinutes: 30,
-    posterUrl: IMG.femme,
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["femme", "leadership"],
-  },
-  {
-    id: "p-entre-nous",
-    title: "Entre Nous Magazine",
-    subtitle: "Société & vie pratique",
-    description:
-      "Magazine de proximité : consommation, santé, éducation et initiatives locales, avec des reportages tournés dans les dix régions.",
-    category: "talk",
-    durationMinutes: 60,
-    posterUrl: "",
-    status: "validated",
-    isReplayAvailable: false,
-    tags: ["magazine", "société"],
-  },
-  {
-    id: "p-hitparade",
-    title: "Hitparade",
-    subtitle: "Le classement des hits 237",
-    description:
-      "Le top des sons camerounais et africains : clips, interviews d’artistes et votes des téléspectateurs en direct.",
-    category: "music",
-    durationMinutes: 120,
-    posterUrl: IMG.hitparade,
-    backdropUrl: IMG.hitparade,
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["musique", "clips", "top"],
-  },
-  {
-    id: "p-info-midi",
-    title: "Balafon Infos Midi",
-    subtitle: "Le point à la mi-journée",
-    description:
-      "L’actualité à chaud de la matinée, les directs de la rédaction et la rubrique « Ça se passe chez vous ».",
-    category: "news",
-    durationMinutes: 60,
-    posterUrl: "",
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["info", "midi"],
-  },
-  {
-    id: "p-doc",
-    title: "Documentaire Afrique",
-    subtitle: "Histoires du continent",
-    description:
-      "Une fenêtre ouverte sur l’Afrique : patrimoine, nature, grandes figures et récits contemporains du continent.",
-    category: "documentary",
-    durationMinutes: 60,
-    posterUrl: IMG.doc,
-    backdropUrl: IMG.doc,
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["documentaire", "Afrique", "patrimoine"],
-  },
-  {
-    id: "p-culture",
-    title: "Culture 237",
-    subtitle: "Arts, traditions & création",
-    description:
-      "Le magazine culturel de référence : musique, danse, littérature, mode et arts visuels made in Cameroun.",
-    category: "culture",
-    durationMinutes: 90,
-    posterUrl: IMG.culture,
-    backdropUrl: IMG.culture,
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["culture", "arts", "237"],
-  },
-  {
-    id: "p-meufs",
-    title: "Les Meufs",
-    subtitle: "Talk-show sans filtre",
-    description:
-      "Quatre animatrices, zéro tabou : société, relations, carrière et humour, en direct avec les réactions du public.",
-    category: "entertainment",
-    durationMinutes: 90,
-    posterUrl: "",
-    status: "validated",
-    isReplayAvailable: false,
-    tags: ["talk-show", "divertissement"],
-  },
-  {
-    id: "p-sport",
-    title: "Sport 360",
-    subtitle: "Toute l’actu sportive",
-    description:
-      "Football local et international, Lions Indomptables, basket, athlétisme : analyses, images et interviews exclusives.",
-    category: "sport",
-    durationMinutes: 60,
-    posterUrl: IMG.sport,
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["sport", "football", "Lions"],
-  },
-  {
-    id: "p-journal",
-    title: "Le Journal du Soir",
-    subtitle: "Le grand rendez-vous de l’info",
-    description:
-      "Toute l’actualité du Cameroun et de l’Afrique : reportages de la rédaction, invités du 19 h et revue de la presse internationale.",
-    category: "news",
-    durationMinutes: 60,
-    posterUrl: IMG.journal,
-    backdropUrl: IMG.journal,
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["journal", "info", "soir"],
-  },
-  {
-    id: "p-cine",
-    title: "Ciné Balafon",
-    subtitle: "Le cinéma en prime time",
-    description:
-      "Les grands films africains et internationaux, en version française, présentés par la rédaction culture.",
-    category: "series",
-    durationMinutes: 90,
-    posterUrl: IMG.cine,
-    backdropUrl: IMG.cine,
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["cinéma", "film", "prime"],
-  },
-  {
-    id: "p-serie",
-    title: "Série du Soir : Les Héritières",
-    subtitle: "Saison 2 · épisodes inédits",
-    description:
-      "À la mort du patriarche, trois sœurs se disputent l’empire familial. La série phénomène produite à Douala.",
-    category: "series",
-    durationMinutes: 90,
-    posterUrl: "",
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["série", "fiction", "237"],
-  },
-  {
-    id: "p-nuits",
-    title: "Nuits Balafon",
-    subtitle: "Clôture musicale de l’antenne",
-    description:
-      "Concerts acoustiques, sessions live et balafon sessions pour accompagner la fin d’antenne jusqu’à minuit.",
-    category: "music",
-    durationMinutes: 60,
-    posterUrl: "",
-    status: "validated",
-    isReplayAvailable: false,
-    tags: ["musique", "live", "nuit"],
-  },
-  {
-    id: "p-cle-weekend",
-    title: "Clé Weekend",
-    subtitle: "L’émission des sorties",
-    description:
-      "Agenda complet du week-end : concerts, expositions, sports et bons plans dans tout le Cameroun.",
-    category: "entertainment",
-    durationMinutes: 120,
-    posterUrl: "",
-    status: "validated",
-    isReplayAvailable: true,
-    tags: ["weekend", "sorties", "agenda"],
-  },
-  {
-    id: "p-rediff-debat",
-    title: "Rediffusion — Le Grand Débat",
-    subtitle: "L’édition de la veille",
-    description:
-      "Seconde diffusion du Grand Débat pour les téléspectateurs qui ont manqué l’édition matinale.",
+      "Reprise d’une émission phare de Balafon TV pour assurer la continuité de l’antenne entre deux programmes.",
     category: "rerun",
-    durationMinutes: 90,
+    durationMinutes: 60,
     posterUrl: "",
     status: "validated",
     isReplayAvailable: false,
-    tags: ["rediffusion", "débat"],
+    tags: ["rediffusion"],
   },
   {
-    id: "p-teleboutique",
-    title: "Téléboutique 237",
-    subtitle: "Écran commercial",
+    id: CLIPS_PROGRAM_ID,
+    title: "Balafon Clips",
+    subtitle: "Sélection musicale",
     description:
-      "Séquence publicitaire : offres des partenaires et annonceurs de Balafon TV.",
-    category: "commercial",
+      "Sélection de clips d’artistes camerounais et africains — le son du 237 en continu sur Balafon TV.",
+    category: "music",
     durationMinutes: 30,
     posterUrl: "",
     status: "validated",
     isReplayAvailable: false,
-    tags: ["publicité", "partenaires"],
-  },
-  {
-    id: "p-junior",
-    title: "Balafon Junior",
-    subtitle: "Jeunesse & éducation",
-    description:
-      "Dessins animés africains, contes et ateliers pédagogiques pour les 4-12 ans.",
-    category: "culture",
-    durationMinutes: 30,
-    posterUrl: "",
-    status: "draft",
-    isReplayAvailable: false,
-    tags: ["jeunesse", "éducation"],
+    tags: ["clips", "musique", "237"],
   },
   {
     id: OFF_AIR_PROGRAM_ID,
     title: "Hors antenne",
     subtitle: "Aucune diffusion planifiée",
     description:
-      "Période de fermeture d’antenne. Reprise des programmes à 06 h 00.",
+      "Période sans diffusion. L’antenne de Balafon TV reprend chaque jour à 06 h 00.",
     category: "off-air",
     durationMinutes: 360,
     posterUrl: "",
     status: "validated",
     isReplayAvailable: false,
-    tags: ["hors antenne"],
+    tags: ["nuit"],
   },
 ];

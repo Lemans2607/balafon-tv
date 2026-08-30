@@ -42,6 +42,8 @@ export interface Program {
   isLive?: boolean;
   isReplayAvailable?: boolean;
   tags: string[];
+  /** Fiabilité de l'horaire (catalogue réel Balafon TV) */
+  fiabilite?: "confirme" | "estime";
 }
 
 export interface ScheduleItem {

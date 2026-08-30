@@ -82,7 +82,31 @@ export function ProgramDetails() {
                   Replay disponible
                 </span>
               )}
+              {program.fiabilite === "confirme" && (
+                <span
+                  className="rounded-md px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider"
+                  style={{ background: "rgba(0,245,160,0.1)", color: "#00F5A0" }}
+                  title="Horaire rapporté par balafon.media ou la presse"
+                >
+                  Horaire confirmé
+                </span>
+              )}
+              {program.fiabilite === "estime" && (
+                <span
+                  className="rounded-md px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider"
+                  style={{ background: "rgba(255,184,0,0.12)", color: "#FFB800" }}
+                  title="Émission réelle (balafon.media) — horaire hypothétique pour la démonstration"
+                >
+                  Horaire estimé · démo
+                </span>
+              )}
             </div>
+            {program.fiabilite === "estime" && (
+              <p className="mt-3 max-w-2xl rounded-lg border border-goldwarn/30 bg-goldwarn/5 px-3 py-2 text-[11.5px] leading-relaxed text-goldwarn/90">
+                Cette émission est bien réelle (catalogue balafon.media), mais son horaire exact n’a
+                pas été vérifié : l’heure affichée est une hypothèse plausible pour la démonstration.
+              </p>
+            )}
             <h1 className="font-display mt-4 text-3xl font-black uppercase leading-tight tracking-tight text-paper sm:text-5xl">
               {program.title}
             </h1>

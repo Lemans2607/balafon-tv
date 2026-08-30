@@ -37,6 +37,6 @@ export const useAlertStore = create<AlertState>()(
           ),
         }),
     }),
-    { name: "balafon-alerts-v1" }
+    { name: "balafon-alerts-v2" }
   )
 );

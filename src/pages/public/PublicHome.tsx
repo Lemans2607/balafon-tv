@@ -73,11 +73,11 @@ export function PublicHome() {
               )}
 
               <h1 className="font-display mt-5 max-w-3xl text-4xl font-black uppercase leading-[0.98] tracking-tightest text-paper sm:text-6xl">
-                {isOffAir ? "Reprise de l’antenne à 06:00" : current?.title}
+                {isOffAir ? "L’antenne est en pause" : current?.title}
               </h1>
               <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-mist">
                 {isOffAir
-                  ? "Aucune diffusion planifiée pour le moment. Retrouvez Balafon TV dès 06 h 00 avec Balafon Infos Matin."
+                  ? "Aucune diffusion en cours. Retrouvez C'le Matin dès 07 h 00 du lundi au vendredi, et nos magazines le week-end sur Balafon TV."
                   : current?.description}
               </p>
 

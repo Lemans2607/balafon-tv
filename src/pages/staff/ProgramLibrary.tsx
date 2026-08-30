@@ -180,7 +180,7 @@ export function ProgramLibrary() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? "Modifier le programme" : "Nouveau programme"} width="max-w-xl">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Titre *" error={errors.title}>
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} placeholder="Ex. : Balafon Infos Matin" />
+            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} placeholder="Ex. : Faut Pas Zapper" />
           </Field>
           <Field label="Sous-titre">
             <input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} className={inputCls} placeholder="Accroche courte" />

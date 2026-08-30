@@ -267,7 +267,7 @@ export const useScheduleStore = create<ScheduleState>()(
       },
     }),
     {
-      name: "balafon-schedule-v1",
+      name: "balafon-schedule-v2",
       partialize: (s) => ({
         programs: s.programs,
         scheduleMap: s.scheduleMap,

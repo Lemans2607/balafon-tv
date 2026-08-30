@@ -68,13 +68,13 @@ export function RegieControl() {
     addAlert({
       severity: "critical",
       title: "Modification Directeur — grille du jour",
-      message: `18:45 — Remplacement de « Le Journal du Soir »\npar « Documentaire Afrique ».\n\nAction requise dans vMix.`,
+      message: `18:45 — Remplacement de « Faut Pas Zapper »\npar « C'le Weekend » (édition spéciale).\n\nAction requise dans vMix.`,
       source: "director",
       actionRequired: true,
       relatedScheduleId: today,
     });
-    vmix.sendChange("Remplacement « Le Journal du Soir » → « Documentaire Afrique » (18:45)");
-    addLog({ user: USERS.directeur.name, role: "directeur", action: "Modification de grille validée (simulation)", details: `Remplacement Journal du Soir → Documentaire Afrique sur la grille du ${today}.`, severity: "critical", date: today });
+    vmix.sendChange("Remplacement « Faut Pas Zapper » → « C'le Weekend » (18:45)");
+    addLog({ user: USERS.directeur.name, role: "directeur", action: "Modification de grille validée (simulation)", details: `Remplacement Faut Pas Zapper → C'le Weekend sur la grille du ${today}.`, severity: "critical", date: today });
     toast({ title: "Alerte critique reçue", message: "La console d’alertes a été mise à jour — acquittement requis.", tone: "error" });
   };
 

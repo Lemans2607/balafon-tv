@@ -6,6 +6,29 @@ Plateforme de programmation TV pour **Balafon Media Group** (Cameroun) : portail
 
 > Portail public dédié **exclusivement à Balafon TV** — aucune radio.
 
+## Données de démonstration — émissions réelles de Balafon TV
+
+Les grilles ne sont plus fictives : elles sont **générées depuis le catalogue réel des
+émissions** (`src/data/emissions_reelles_balafon_tv.json` — C'le Matin, Faut Pas Zapper,
+Femme au Contrôle, Les Meufs, Top 25 Hit-Parade, C'le Weekend, Grand Plateau, Entretien,
+Moment de Sports, Télé-Zoom, Grand Déballage, Télémarché, Séries Cultes).
+
+- `src/utils/planbyAdapter.ts` fournit les deux voies d'alimentation de l'EPG :
+  - `depuisApiBackend(grilles)` → format Planby depuis l'API Django/DRF (usage réel à venir) ;
+  - `depuisCatalogueDemo(catalogue, slug, nom, lundi)` → format Planby depuis le catalogue JSON
+    (c'est cette voie qui alimente le seeding actuel via `src/data/schedules.ts`).
+- Chaque émission porte un champ `fiabilite` : `"confirme"` (horaire rapporté par
+  balafon.media / presse, source citée dans le JSON) ou `"estime"` (émission réelle, horaire
+    hypothétique pour la démo — signalé par un badge doré sur la fiche émission).
+- Les jours de la semaine sont peuplés selon les jours de diffusion réels ; les vides sont
+    comblés par des blocs de continuité (Rediffusion / Balafon Clips) et le hors antenne
+    00:00–06:00. **Une journée (J+2) est volontairement laissée incomplète** pour démontrer la
+    détection de trous et le déblocage de la publication par drag & drop.
+- Seul le slug `balafon-tv` est diffusé sur ce portail (pas de radio).
+- Sources : https://balafon.media/balafon-tv/ et https://lejour.cm (lancement de grille du
+  01/07/2024). La grille de production doit être demandée à jour à la régie pour remplacer les
+  entrées « estimées ».
+
 ## Lancement
 
 ```bash
@@ -34,8 +57,8 @@ src/
                         RegieControl, ProgramLibrary, AlertCenter, GridHistory, SettingsPage
   store/                appStore, scheduleStore, alertStore, vmixStore (Zustand + persist)
   hooks/                useNow (horloge simulée), useCurrentProgram, usePlayheadX, useMediaQuery
-  data/                 programmes + grilles de démonstration (7 jours)
-  utils/                time.ts (fuseau/ISO), validation.ts (trous, chevauchements, complétude)
+  data/                 emissions_reelles_balafon_tv.json + programmes + grilles générées (7 jours)
+  utils/                time.ts, validation.ts, planbyAdapter.ts (API Django ↔ Planby, catalogue ↔ Planby)
   types/                types métier + métadonnées sémantiques
 ```
 
