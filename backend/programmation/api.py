@@ -20,7 +20,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 
 from comptes.permissions import (
-    EstAdminOuDirecteur,
     EstDirecteurAntenne,
     LecturePubliqueEcritureAuthentifiee,
 )
@@ -145,7 +144,7 @@ class GrilleViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
-            return [EstAdminOuDirecteur()]
+            return [EstDirecteurAntenne()]
         if self.action == "valider":
             return [EstDirecteurAntenne()]
         return super().get_permissions()
@@ -243,7 +242,7 @@ class EmissionViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
-            return [EstAdminOuDirecteur()]
+            return [EstDirecteurAntenne()]
         return super().get_permissions()
 
     def perform_update(self, serializer):
@@ -278,7 +277,7 @@ class GrilleEmissionsViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ("create", "update", "partial_update", "destroy"):
-            return [EstAdminOuDirecteur()]
+            return [EstDirecteurAntenne()]
         return super().get_permissions()
 
     def get_queryset(self):

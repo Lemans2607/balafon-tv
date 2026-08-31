@@ -24,7 +24,8 @@ export type ProgramStatus =
   | "completed"
   | "cancelled";
 
-export type UserRole = "admin" | "directeur" | "regie";
+/** Deux rôles métier : le Directeur d'Antenne EST l'admin de la plateforme. */
+export type UserRole = "directeur" | "regie";
 export type AppRole = "public" | UserRole;
 
 export type GridStatus = "draft" | "pending" | "validated";

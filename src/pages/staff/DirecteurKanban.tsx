@@ -35,7 +35,7 @@ export function DirecteurKanban() {
   const [dragOver, setDragOver] = useState<GridStatus | null>(null);
 
   const isDirector = role === "directeur";
-  const user = isDirector ? USERS.directeur : USERS.admin;
+  const user = USERS.directeur;
 
   const dates = useMemo(() => Object.keys(grids).sort(), [grids]);
 
@@ -75,7 +75,7 @@ export function DirecteurKanban() {
   };
 
   const submit = (date: string) => {
-    setGridStatus({ date, status: "pending", user: user.name, role: isDirector ? "directeur" : "admin" });
+    setGridStatus({ date, status: "pending", user: user.name, role: "directeur" });
     toast({ title: "Grille soumise", message: `La grille du ${date} est en attente de validation.`, tone: "info" });
   };
 

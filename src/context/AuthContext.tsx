@@ -93,8 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const role = useMemo<RoleBackend | null>(() => {
     if (utilisateur?.role) return utilisateur.role;
-    // Repli sur le rôle de démonstration (admin / directeur / regie).
-    if (roleDemo === "admin") return "administrateur";
+    // Repli sur le rôle de démonstration (directeur / regie).
     if (roleDemo === "directeur") return "directeur_antenne";
     if (roleDemo === "regie") return "diffuseur";
     return null;

@@ -1,50 +1,84 @@
-# BALAFON + GUIDE — Backend Django (scaffold)
+# BALAFON + GUIDE — Backend Django
 
-Scaffold conforme au guide d'intégration (Phases 1 et 2bis). À copier dans un
-projet Django réel (`balafon_guide`) avec les apps `comptes`, `programmation`,
-`alertes`, `integration_vmix`.
+API REST + WebSocket pour la plateforme EPG de Balafon TV.
 
-## Démarrage (Phase 1)
+**Stack** : Django 5 · DRF · Channels (Redis) · PostgreSQL 16 · SimpleJWT · drf-spectacular.
+
+## Modèle RBAC (2 rôles métier)
+
+| Rôle | Droits |
+|---|---|
+| **Directeur d'Antenne** (`directeur_antenne`) | Administrateur de la plateforme : CRUD grilles/émissions, gestion des comptes (`/api/comptes/`), **validation éditoriale exclusive** (`POST /grilles/{id}/valider/`), synchro vMix. |
+| **Diffuseur** (`diffuseur`) | Régie : lecture des grilles, alertes temps réel (WebSocket), acquittement, synchro vMix. |
+
+Le rôle « administrateur » n'existe plus : le Directeur d'Antenne EST l'admin (cf. rapport de stage).
+Le public non authentifié ne lit que les grilles `statut=validee`.
+
+## Démarrage complet
 
 ```bash
+# 1. Dépendances
 python3.12 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
+# 2. Variables d'environnement
 cp .env.example .env            # éditer DB_PASSWORD / SECRET_KEY
-docker compose up -d            # PostgreSQL 16 + Redis 7
 
-django-admin startproject balafon_guide .
-django-admin startapp comptes
-django-admin startapp programmation
-django-admin startapp alertes
-django-admin startapp integration_vmix
+# 3. PostgreSQL 16 + Redis 7
+docker compose up -d
+docker ps                       # balafon_guide_db + balafon_guide_redis
 
-# Fusionner config/settings_bdd.py dans balafon_guide/settings.py
-cp data/emissions_reelles_balafon_tv.json data/ 2>/dev/null || true
-
+# 4. Migrations
 python manage.py makemigrations && python manage.py migrate
-python manage.py verifier_bdd                 # ← teste la connexion PostgreSQL
-python manage.py createsuperuser
-python manage.py charger_emissions_demo       # ← vraies émissions Balafon TV
-python manage.py runserver                    # API sur http://localhost:8000/api/
+python manage.py verifier_bdd   # teste la connexion + liste les tables
+
+# 5. VRAIS comptes métier (remplace createsuperuser, qui ne fixe pas le rôle)
+python manage.py creer_compte \
+    --email direction@balafon.media --motdepasse 'ChangeMoi!2026' \
+    --prenom Martin --nom Essomba --role directeur_antenne --superuser
+
+python manage.py creer_compte \
+    --email regie@balafon.media --motdepasse 'ChangeMoi!2026' \
+    --prenom Rodrigue --nom Talla --role diffuseur --poste 'Poste vMix 1'
+
+# 6. Données de démo (vraies émissions Balafon TV)
+python manage.py charger_emissions_demo
+
+# 7. Serveur ASGI (HTTP + WebSocket)
+daphne -p 8000 balafon_guide.asgi:application
 ```
 
-## Contrat d'API attendu par le frontend
+## Contrat d'API (consommé par le frontend React)
 
-| Endpoint | Méthode | Usage frontend |
+| Endpoint | Méthode | Accès |
 |---|---|---|
-| `/api/chaines/` | GET | Liste des chaînes (seul `balafon-tv` est diffusé) |
-| `/api/grilles/?statut=validee` | GET | **Hydratation de l'EPG** (`depuisApiBackend` dans `src/utils/planbyAdapter.ts`) |
-| `/api/emissions/` | GET/POST/PATCH | CRUD émissions (Admin) |
-| `/api/auth/token/` | POST | JWT (superuser → rôle administrateur) |
-| `ws://…/ws/alertes/` | WS | Alertes temps réel vers la Régie (Channels + Redis) |
+| `/api/auth/connexion/` | POST | public — `{ email, mot_de_passe }` → JWT |
+| `/api/auth/rafraichir/` · `/deconnexion/` · `/profil/` | POST/GET | JWT |
+| `/api/comptes/` | CRUD | **Directeur d'Antenne** |
+| `/api/chaines/` | GET | public |
+| `/api/grilles/?statut=validee&chaine=&date=` | GET | public (validées) / staff |
+| `/api/grilles/` | POST/PATCH/DELETE | Directeur d'Antenne |
+| `/api/grilles/{id}/valider/` | POST | **Directeur d'Antenne uniquement** |
+| `/api/grilles/{id}/completude/` · `/api/grilles/en-cours/` | GET | public |
+| `/api/grilles/{id}/emissions/` · `/api/emissions/{id}/` | CRUD | Directeur d'Antenne |
+| `/api/alertes/` · `/api/alertes/{id}/marquer-lue/` | GET/POST | Diffuseur (les siennes) / Direction (toutes) |
+| `/api/vmix/synchroniser/{grille_id}/` | POST | Direction + Diffuseur |
+| `/api/vmix/etat/` | GET | staff |
+| `/api/schema/swagger/` | GET | documentation interactive |
+| `ws://…/ws/alertes/?chaine=balafon-tv&token=<jwt>` | WS | groupes d'alertes par chaîne |
 
-Le frontend bascule automatiquement : si `VITE_API_URL` répond, l'EPG est hydraté
-depuis Django ; sinon il fonctionne en **mode démo local** (catalogue JSON embarqué,
-persistance localStorage). Aucun écran vide dans les deux cas.
+Le frontend bascule automatiquement : si `VITE_API_URL` répond, l'EPG est hydraté depuis
+Django ; sinon il fonctionne en mode démo local (catalogue embarqué + localStorage).
 
 ## vMix
 
-`VMIX_MODE=simule` par défaut : le service `integration_vmix` journalise les appels
-sans émettre de requête réelle. Passer en `reel` avec l'URL de la régie
-(`:8088/api`) après validation réseau — voir `backend/.env.example`.
+`VMIX_MODE=simule` par défaut : le service journalise les appels sans émettre de requête
+réelle. Passer en `reel` avec l'URL du poste régie (`http://<ip>:8088/api`) après validation
+réseau — chaque synchro est tracée dans `synchro_vmix` (JSONB).
+
+## Tests
+
+```bash
+pytest                          # transition de statut, restriction valider/,
+                                # alerte post-validation, filtrage public
+```

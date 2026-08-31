@@ -30,20 +30,19 @@ import type { AppRole } from "../../types";
 /* Le Directeur d'Antenne EST l'administrateur de la plateforme :
    il gère les comptes ET les grilles, et seul il valide. */
 const NAV: Array<{ to: string; label: string; icon: React.ReactNode; roles: AppRole[]; end?: boolean }> = [
-  { to: "/studio", label: "Pilotage", icon: <LayoutDashboard size={16} />, roles: ["admin", "directeur", "regie"], end: true },
-  { to: "/studio/admin", label: "Constructeur EPG", icon: <CalendarRange size={16} />, roles: ["admin", "directeur"] },
-  { to: "/studio/directeur", label: "Validation éditoriale", icon: <ClipboardCheck size={16} />, roles: ["admin", "directeur"] },
+  { to: "/studio", label: "Pilotage", icon: <LayoutDashboard size={16} />, roles: ["directeur", "regie"], end: true },
+  { to: "/studio/admin", label: "Constructeur EPG", icon: <CalendarRange size={16} />, roles: ["directeur"] },
+  { to: "/studio/directeur", label: "Validation éditoriale", icon: <ClipboardCheck size={16} />, roles: ["directeur"] },
   { to: "/studio/comptes", label: "Comptes & équipe", icon: <Users size={16} />, roles: ["directeur"] },
-  { to: "/studio/regie", label: "Régie · Mission Control", icon: <MonitorPlay size={16} />, roles: ["admin", "directeur", "regie"] },
-  { to: "/studio/programmes", label: "Bibliothèque", icon: <Library size={16} />, roles: ["admin", "directeur"] },
-  { to: "/studio/grilles", label: "Grilles", icon: <KanbanSquare size={16} />, roles: ["admin", "directeur"] },
-  { to: "/studio/alertes", label: "Alertes", icon: <Bell size={16} />, roles: ["admin", "directeur", "regie"] },
-  { to: "/studio/historique", label: "Historique", icon: <History size={16} />, roles: ["admin", "directeur", "regie"] },
-  { to: "/studio/parametres", label: "Paramètres", icon: <Settings size={16} />, roles: ["admin", "directeur", "regie"] },
+  { to: "/studio/regie", label: "Régie · Mission Control", icon: <MonitorPlay size={16} />, roles: ["directeur", "regie"] },
+  { to: "/studio/programmes", label: "Bibliothèque", icon: <Library size={16} />, roles: ["directeur"] },
+  { to: "/studio/grilles", label: "Grilles", icon: <KanbanSquare size={16} />, roles: ["directeur"] },
+  { to: "/studio/alertes", label: "Alertes", icon: <Bell size={16} />, roles: ["directeur", "regie"] },
+  { to: "/studio/historique", label: "Historique", icon: <History size={16} />, roles: ["directeur", "regie"] },
+  { to: "/studio/parametres", label: "Paramètres", icon: <Settings size={16} />, roles: ["directeur", "regie"] },
 ];
 
 const ROLE_LABEL: Record<string, string> = {
-  admin: "Admin Antenne",
   directeur: "Direction d’Antenne",
   regie: "Régie · Diffusion",
 };
@@ -70,7 +69,7 @@ export function StaffShell() {
             entrer sans rechargement.
           </p>
           <div className="mt-6 grid gap-2">
-            {(["admin", "directeur", "regie"] as const).map((r) => (
+            {(["directeur", "regie"] as const).map((r) => (
               <Button
                 key={r}
                 variant="outline"
@@ -91,7 +90,7 @@ export function StaffShell() {
     );
   }
 
-  const user = USERS[role] ?? USERS.admin;
+  const user = USERS[role] ?? USERS.directeur;
   const unacked = alerts.filter((a) => !a.acknowledged).length;
   const vMeta = VMIX_STATUS_META[vmixStatus];
   const currentNav = NAV.find((n) =>

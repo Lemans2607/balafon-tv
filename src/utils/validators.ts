@@ -30,7 +30,7 @@ export const schemaUtilisateur = z.object({
     .refine((v) => v.endsWith("@balafon.media"), {
       message: "Seuls les emails @balafon.media sont acceptés.",
     }),
-  role: z.enum(["directeur", "admin", "regie"]),
+  role: z.enum(["directeur", "regie"]),
   fonction: z.string().trim(),
 });
 export type FormulaireUtilisateur = z.infer<typeof schemaUtilisateur>;

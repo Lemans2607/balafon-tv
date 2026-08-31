@@ -3,7 +3,8 @@
    Cohérents avec backend/programmation/models.py, comptes, alertes.
    ============================================================ */
 
-export type RoleBackend = "administrateur" | "directeur_antenne" | "diffuseur";
+/** Rôles métier backend — le Directeur d'Antenne est l'admin de la plateforme. */
+export type RoleBackend = "directeur_antenne" | "diffuseur";
 
 export type StatutGrille = "brouillon" | "en_validation" | "validee";
 

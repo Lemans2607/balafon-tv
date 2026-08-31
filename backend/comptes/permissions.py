@@ -1,26 +1,14 @@
 """
-Permissions DRF personnalisées (RBAC) — cf. cahier des charges §9.
+Permissions DRF personnalisées (RBAC).
 
-Chaque permission lit le `role` de l'utilisateur authentifié.
+Deux rôles métier : Directeur d'Antenne (admin de la plateforme + validation
+exclusive) et Diffuseur (régie). Le rôle « administrateur » n'existe plus.
 """
 from rest_framework.permissions import BasePermission
 
 
-class EstAdministrateur(BasePermission):
-    """Réservé aux administrateurs."""
-
-    message = "Réservé aux administrateurs."
-
-    def has_permission(self, request, view) -> bool:
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.est_administrateur
-        )
-
-
 class EstDirecteurAntenne(BasePermission):
-    """Réservé aux directeurs d'antenne (seuls habilités à valider)."""
+    """Réservé aux directeurs d'antenne (gestion des grilles, comptes, validation)."""
 
     message = "Seul un Directeur d'Antenne peut effectuer cette action."
 
@@ -42,19 +30,6 @@ class EstDiffuseur(BasePermission):
             request.user
             and request.user.is_authenticated
             and request.user.est_diffuseur
-        )
-
-
-class EstAdminOuDirecteur(BasePermission):
-    """Admin ou Directeur d'Antenne (gestion des grilles/émissions)."""
-
-    message = "Réservé aux administrateurs et directeurs d'antenne."
-
-    def has_permission(self, request, view) -> bool:
-        return bool(
-            request.user
-            and request.user.is_authenticated
-            and request.user.peut_gerer_grille
         )
 
 
