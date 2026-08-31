@@ -116,12 +116,16 @@ export function BalafonEpg({
   const startDate = useMemo(() => `${date}T${hhmm(dayStartMin)}:00`, [date, dayStartMin]);
   const endDate = useMemo(() => `${nextDay(date)}T00:00:00`, [date]);
 
+  /* ⚠️ Ne JAMAIS passer `width` à useEpg : la largeur interne (layoutWidth)
+     n'est initialisée qu'au premier rendu et son effet de mesure ne tourne
+     que si `width` est absent — sinon layoutWidth reste undefined et la
+     virtualisation (getItemVisibility) masque TOUS les programmes.
+     Planby mesure lui-même son conteneur via containerRef. */
   const { getEpgProps, getLayoutProps, onScrollLeft, onScrollRight } = useEpg({
     epg,
     channels: BALAFON_CHANNELS,
     startDate,
     endDate,
-    width: width || undefined,
     height: heightPx,
     isSidebar: true,
     isTimeline: true,
@@ -130,6 +134,7 @@ export function BalafonEpg({
     dayWidth: EPG_GEOMETRY.dayWidth,
     sidebarWidth: EPG_GEOMETRY.sidebarWidth,
     itemHeight: EPG_GEOMETRY.itemHeight,
+    itemOverscan: 500,
     theme: planbyTheme,
     globalStyles: PLANBY_GLOBAL_CSS,
   });
