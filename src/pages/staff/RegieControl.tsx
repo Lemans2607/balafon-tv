@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
+  Activity,
   AlertOctagon,
   ArrowLeft,
   ArrowRight,
@@ -18,11 +19,12 @@ import { useScheduleStore } from "../../store/scheduleStore";
 import { useAppStore } from "../../store/appStore";
 import { useCurrentProgram, useNow } from "../../hooks/useNow";
 import { useGrilleQuery } from "../../hooks/useGrilleQuery";
+import { GrilleGantt } from "../../components/charts/GrilleGantt";
 import { dateKey, formatHM, sinceISO, tillISO } from "../../utils/time";
 import { BalafonEpg } from "../../components/planby/BalafonEpg";
 import type { PlanbyEpgData } from "../../components/planby/planbyMappers";
 import { AlertCard } from "../../components/alerts/AlertCard";
-import { Badge, Button, Modal, ProgressBar, SimClock } from "../../components/ui";
+import { Badge, Button, LiveBadge, Modal, ProgressBar, SimClock } from "../../components/ui";
 import { ProgramPoster } from "../../components/media/ProgramPoster";
 import { CATEGORY_META } from "../../types";
 import { USERS } from "../../data/schedules";
@@ -113,9 +115,7 @@ export function RegieControl() {
             {CATEGORY_META[category].label}
           </span>
         )}
-        {isLive && (
-          <span className="live-pulse rounded bg-balafon px-1.5 py-px text-[9px] font-extrabold uppercase text-white">Live</span>
-        )}
+        {isLive && <LiveBadge size="sm" />}
       </div>
       {typeof progress === "number" && (
         <div className="mt-2.5">
@@ -178,6 +178,19 @@ export function RegieControl() {
         <div className="rounded-2xl border border-ink-700 bg-ink-800/60 p-4">
           <BalafonEpg date={today} mode="regie" now={now} heightPx={240} onSelectItem={setDetail} />
         </div>
+
+        {/* Timeline Gantt de la journée */}
+        <section className="panel p-5" aria-label="Timeline de la journée">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display flex items-center gap-2 text-[20px] uppercase tracking-wide text-paper">
+              <Activity size={16} className="text-balafon" aria-hidden /> Timeline de la journée
+            </h2>
+            <p className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-mist-dark">
+              06:00 → 24:00 · couleur = catégorie
+            </p>
+          </div>
+          <GrilleGantt date={today} now={now} />
+        </section>
 
         {/* Console vMix simulée */}
         <div className="rounded-2xl border border-ink-700 bg-ink-800/70 p-5">

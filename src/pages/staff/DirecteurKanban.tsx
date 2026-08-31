@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Clock3, ExternalLink, FileEdit, Send, ShieldAlert, Undo2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock3, ExternalLink, FileEdit, PieChart, Send, ShieldAlert, Undo2 } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { useAlertStore } from "../../store/alertStore";
 import { Badge, Button, ProgressBar } from "../../components/ui";
+import { OccupationChart } from "../../components/charts/OccupationChart";
 import { STATUS_META, type GridInfo, type GridStatus } from "../../types";
 import { ADMIN_DAY_START, DAY_END, durationLabel, labelDay } from "../../utils/time";
 import { validateGridForPublish } from "../../utils/validation";
@@ -110,6 +111,17 @@ export function DirecteurKanban() {
           </Badge>
         )}
       </div>
+
+      {/* Occupation de l'antenne par catégorie (grilles validées) */}
+      <section className="panel mb-6 p-5" aria-label="Occupation de l'antenne par catégorie">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display flex items-center gap-2 text-[20px] uppercase tracking-wide text-paper">
+            <PieChart size={16} className="text-balafon" aria-hidden /> Occupation de l'antenne par catégorie
+          </h2>
+          <p className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-mist-dark">Grilles validées & publiées</p>
+        </div>
+        <OccupationChart />
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-3">
         {COLUMNS.map((col) => {

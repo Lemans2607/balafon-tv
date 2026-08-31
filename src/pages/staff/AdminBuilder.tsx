@@ -10,6 +10,7 @@ import { useNow } from "../../hooks/useNow";
 import { BalafonEpg } from "../../components/planby/BalafonEpg";
 import type { PlanbyEpgData } from "../../components/planby/planbyMappers";
 import { Badge, Button, DaySelector, Modal } from "../../components/ui";
+import { GrilleCalendar } from "../../components/calendar/GrilleCalendar";
 import { ProgramPoster } from "../../components/media/ProgramPoster";
 import { CATEGORY_META, STATUS_META, type Program, type ScheduleItem } from "../../types";
 import { ADMIN_DAY_START, DAY_END, durationLabel, toHHMM, toMinutes } from "../../utils/time";
@@ -251,7 +252,10 @@ export function AdminBuilder() {
 
       {/* ================= TIMELINE + CONTRÔLES ================= */}
       <section className="order-1 min-w-0 xl:order-2">
-        <DaySelector value={selectedDate} onChange={setSelectedDate} startOffset={0} days={7} />
+        <GrilleCalendar value={selectedDate} onChange={setSelectedDate} />
+        <div className="mt-4">
+          <DaySelector value={selectedDate} onChange={setSelectedDate} startOffset={0} days={7} />
+        </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Badge color={statusMeta.color} soft={statusMeta.soft} className="px-2.5 py-1 text-[11px]">

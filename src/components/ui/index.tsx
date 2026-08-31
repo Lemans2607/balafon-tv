@@ -22,7 +22,7 @@ export function Button({
   size?: "sm" | "md" | "lg";
 }) {
   const base =
-    "inline-flex items-center justify-center gap-1.5 rounded-lg font-bold transition-all duration-150 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100";
+    "relative inline-flex items-center justify-center gap-1.5 overflow-hidden rounded-lg font-bold shadow-[inset_0_1px_0_rgba(255,255,255,0.09)] transition-all duration-150 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0 disabled:active:scale-100";
   const sizes = {
     sm: "px-2.5 py-1.5 text-[12px]",
     md: "px-3.5 py-2 text-[13px]",
@@ -409,5 +409,159 @@ export function ToastHost() {
       </AnimatePresence>
     </div>,
     document.body
+  );
+}
+
+/* ============================================================
+   Surfaces & navigation — niveau shadcn/ui
+   ============================================================ */
+
+/** Carte premium : bordure subtile, reflet supérieur, ombre douce. */
+export function Card({
+  children,
+  className = "",
+  hover = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  hover?: boolean;
+}) {
+  return (
+    <div
+      className={`panel ${hover ? "sheen transition-all duration-300 hover:-translate-y-0.5 hover:border-ink-500" : ""} ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** En-tête de section éditorial (kicker + grand titre). */
+export function SectionTitle({
+  kicker,
+  title,
+  accent = "#E31E24",
+  right,
+}: {
+  kicker: string;
+  title: string;
+  accent?: string;
+  right?: ReactNode;
+}) {
+  return (
+    <div className="flex items-end justify-between gap-4">
+      <div>
+        <p className="font-mono text-[10.5px] font-bold uppercase tracking-[0.3em]" style={{ color: accent }}>
+          {kicker}
+        </p>
+        <h2 className="font-display mt-1 text-[30px] font-normal uppercase leading-none text-paper sm:text-[38px]">
+          {title}
+        </h2>
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/** Onglets avec souligné animé + fondu du contenu (AnimatePresence à la charge du parent). */
+export function Tabs({
+  tabs,
+  value,
+  onChange,
+  idBase,
+}: {
+  tabs: Array<{ id: string; label: string; icon?: ReactNode; count?: number }>;
+  value: string;
+  onChange: (id: string) => void;
+  idBase: string;
+}) {
+  return (
+    <div className="flex items-center gap-1 overflow-x-auto border-b border-ink-700" role="tablist">
+      {tabs.map((t) => {
+        const active = t.id === value;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`${idBase}-tab-${t.id}`}
+            aria-selected={active}
+            aria-controls={`${idBase}-panel-${t.id}`}
+            onClick={() => onChange(t.id)}
+            className={`relative flex shrink-0 items-center gap-2 px-4 py-2.5 text-[13px] font-extrabold transition-colors ${
+              active ? "text-balafon" : "text-mist hover:text-paper"
+            }`}
+          >
+            {t.icon}
+            {t.label}
+            {typeof t.count === "number" && (
+              <span
+                className={`rounded-full px-1.5 py-px font-mono text-[10px] font-bold ${
+                  active ? "bg-balafon/15 text-balafon" : "bg-ink-700 text-mist"
+                }`}
+              >
+                {t.count}
+              </span>
+            )}
+            {active && (
+              <motion.span
+                layoutId={`${idBase}-underline`}
+                className="absolute inset-x-2 -bottom-px h-[3px] rounded-t bg-balafon"
+                transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                aria-hidden
+              />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Panneau d'onglet avec fondu/glissement d'entrée. */
+export function TabPanel({
+  id,
+  idBase,
+  active,
+  children,
+}: {
+  id: string;
+  idBase: string;
+  active: boolean;
+  children: ReactNode;
+}) {
+  if (!active) return null;
+  return (
+    <motion.div
+      key={id}
+      id={`${idBase}-panel-${id}`}
+      role="tabpanel"
+      aria-labelledby={`${idBase}-tab-${id}`}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Badge « EN DIRECT » — pastille pulsante + égaliseur animé. */
+export function LiveBadge({ size = "md" }: { size?: "sm" | "md" }) {
+  const sm = size === "sm";
+  return (
+    <span
+      className={`live-pulse inline-flex items-center gap-1.5 rounded-md bg-balafon font-extrabold uppercase tracking-[0.14em] text-white ${
+        sm ? "px-1.5 py-0.5 text-[8.5px]" : "px-2.5 py-1 text-[10px]"
+      }`}
+      aria-label="En direct"
+    >
+      <span className={`flex items-end gap-[2px] ${sm ? "h-2" : "h-2.5"}`} aria-hidden>
+        <span className="eq-bar1 w-[2.5px] rounded-sm bg-white" />
+        <span className="eq-bar2 w-[2.5px] rounded-sm bg-white" />
+        <span className="eq-bar3 w-[2.5px] rounded-sm bg-white" />
+      </span>
+      Direct
+    </span>
   );
 }

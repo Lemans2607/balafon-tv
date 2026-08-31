@@ -156,14 +156,14 @@ const page = (label: string, el: ReactNode) => (
 
 function AnimatedOutlet() {
   const location = useLocation();
-  /* Transition simple (fondu d'entrée uniquement) : aucune animation de
-     sortie bloquante — la navigation ne peut jamais rester en suspens. */
+  /* Transition de vue façon application native : fondu + légère élévation.
+     Entrée uniquement (pas de sortie bloquante) — navigation jamais en suspens. */
   return (
     <motion.div
       key={location.pathname}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
+      initial={{ opacity: 0, y: 16, scale: 0.996 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
     >
       <Routes location={location}>
         <Route path="/tv/*" element={<PublicShell />} />
