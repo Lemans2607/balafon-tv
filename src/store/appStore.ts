@@ -28,7 +28,10 @@ let toastSeq = 0;
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      role: "public",
+      /* Site de production : le Directeur d'Antenne (super admin) est le
+         compte initial — l'espace Studio s'ouvre directement en Direction.
+         Le rôle réel est ensuite piloté par l'authentification JWT. */
+      role: "directeur",
       selectedDate: todayKey(),
       simOffsetMin: 0,
       toasts: [],
