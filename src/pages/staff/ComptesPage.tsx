@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { motion } from "framer-motion";
-import { Mail, ShieldCheck, Trash2, UserCog, UserPlus, UserX } from "lucide-react";
+import { Lock, Mail, ShieldCheck, Trash2, UserCog, UserPlus, UserX } from "lucide-react";
 import type { z } from "zod";
 
 import { useAppStore } from "../../store/appStore";
@@ -34,27 +34,47 @@ const COMPTES_INITIAUX: Compte[] = [
 ];
 
 const ROLE_META: Record<UserRole, { label: string; color: string; soft: string }> = {
-  directeur: { label: "Directeur d’Antenne", color: "#F2790F", soft: "rgba(242,121,15,0.15)" },
-  admin: { label: "Admin Antenne", color: "#2E77D0", soft: "rgba(46,119,208,0.16)" },
+  directeur: { label: "Direction d’Antenne", color: "#E31E24", soft: "rgba(227,30,36,0.14)" },
+  admin: { label: "Admin Antenne", color: "#0F6BD6", soft: "rgba(15,107,214,0.16)" },
   regie: { label: "Régie · Diffuseur", color: "#00F5A0", soft: "rgba(0,245,160,0.12)" },
 };
 
 interface ComptesState {
   comptes: Compte[];
-  ajouter: (c: Omit<Compte, "id">) => void;
+  /** Retourne false si la règle « un seul Admin Antenne » est violée. */
+  ajouter: (c: Omit<Compte, "id">) => boolean;
   modifier: (id: string, patch: Partial<Compte>) => void;
   supprimer: (id: string) => void;
 }
+
+/* ============================================================
+   RÈGLE DE SÉCURITÉ : il existe UN SEUL compte Admin Antenne
+   (compte système). En créer ou en supprimer un second est
+   interdit côté UI ET côté store (défense en profondeur) —
+   idem côté Django (contrainte applicative dans comptes/models.py).
+   ============================================================ */
 
 const useComptes = create<ComptesState>()(
   persist(
     (set, get) => ({
       comptes: COMPTES_INITIAUX,
-      ajouter: (c) =>
-        set({ comptes: [...get().comptes, { ...c, id: `c-${Date.now()}` }] }),
+      ajouter: (c) => {
+        if (c.role === "admin") return false; // faille bloquée
+        set({ comptes: [...get().comptes, { ...c, id: `c-${Date.now()}` }] });
+        return true;
+      },
       modifier: (id, patch) =>
-        set({ comptes: get().comptes.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
-      supprimer: (id) => set({ comptes: get().comptes.filter((x) => x.id !== id) }),
+        set({
+          comptes: get().comptes.map((x) =>
+            /* le compte système ne peut jamais devenir/cesser d'être admin */
+            x.id === id ? { ...x, ...(x.role === "admin" ? { ...patch, role: "admin" as const } : patch) } : x
+          ),
+        }),
+      supprimer: (id) => {
+        const cible = get().comptes.find((x) => x.id === id);
+        if (cible?.role === "admin") return; // compte système protégé
+        set({ comptes: get().comptes.filter((x) => x.id !== id) });
+      },
     }),
     { name: "balafon-comptes-v1" }
   )
@@ -101,12 +121,21 @@ export function ComptesPage() {
       setErreurs(champs);
       return;
     }
+    if (role === "admin") {
+      /* Défense en profondeur : même si l'UI ne le propose plus, on refuse. */
+      setErreurs({ role: "Sécurité : il ne peut exister qu’un seul compte Admin Antenne." });
+      return;
+    }
     if (modal.edition) {
       modifier(modal.edition.id, { nom, email, role, fonction });
       toast({ title: "Compte mis à jour", message: `${nom} — ${ROLE_META[role].label}.`, tone: "success" });
       addLog({ user: "Direction d’Antenne", role: "directeur", action: "Modification de compte", details: `Compte de ${nom} (${email}) mis à jour.`, severity: "info" });
     } else {
-      ajouter({ nom, email, role, fonction, actif: true });
+      const ok = ajouter({ nom, email, role, fonction, actif: true });
+      if (!ok) {
+        setErreurs({ role: "Sécurité : il ne peut exister qu’un seul compte Admin Antenne." });
+        return;
+      }
       toast({ title: "Compte créé", message: `${nom} rejoint l’équipe en tant que ${ROLE_META[role].label}.`, tone: "success" });
       addLog({ user: "Direction d’Antenne", role: "directeur", action: "Création de compte", details: `Compte de ${nom} (${email}) créé — rôle ${ROLE_META[role].label}.`, severity: "info" });
     }
@@ -163,11 +192,22 @@ export function ComptesPage() {
         )}
       </div>
 
-      <p className="flex items-center gap-2 text-[12px] text-mist-dark">
-        <ShieldCheck size={13} className="text-balafon" aria-hidden />
-        La gestion des comptes relève de la Direction d’Antenne. En production, ces données vivent dans
-        <span className="font-mono text-mist">/api/comptes/</span> (Django, rôle administrateur requis).
-      </p>
+      <div className="space-y-2">
+        <p className="flex items-center gap-2 text-[12px] text-mist-dark">
+          <ShieldCheck size={13} className="text-balafon" aria-hidden />
+          La gestion des comptes relève de la Direction d’Antenne. En production, ces données vivent dans
+          <span className="font-mono text-mist">/api/comptes/</span> (Django, rôle administrateur requis).
+        </p>
+        <p className="flex items-start gap-2 rounded-lg border border-ocean/35 bg-ocean/10 px-3 py-2.5 text-[12px] font-semibold leading-relaxed text-ocean-soft">
+          <Lock size={13} className="mt-0.5 shrink-0" aria-hidden />
+          <span>
+            Règle de sécurité : <strong className="text-paper">un seul compte Admin Antenne</strong> est autorisé
+            (compte système). Il ne peut être ni dupliqué, ni modifié, ni supprimé — côté interface comme côté base
+            de données. Les nouveaux comptes sont créés en <strong className="text-paper">Direction d’Antenne</strong>{" "}
+            ou <strong className="text-paper">Régie</strong>.
+          </span>
+        </p>
+      </div>
 
       {visibles.length === 0 ? (
         <EmptyState icon={<UserCog size={32} />} title="Aucun compte" hint="Créez le premier compte de l’équipe." />
@@ -175,6 +215,7 @@ export function ComptesPage() {
         <ul className="space-y-3">
           {visibles.map((c, i) => {
             const meta = ROLE_META[c.role];
+            const estSysteme = c.role === "admin";
             const initiales = c.nom.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
             return (
               <motion.li
@@ -182,7 +223,9 @@ export function ComptesPage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                className={`flex flex-wrap items-center gap-4 rounded-xl border border-ink-700 bg-ink-800/70 p-4 transition-opacity ${c.actif ? "" : "opacity-55"}`}
+                className={`flex flex-wrap items-center gap-4 rounded-xl border p-4 transition-opacity ${
+                  estSysteme ? "border-ocean/40 bg-ocean/[0.06]" : "border-ink-700 bg-ink-800/70"
+                } ${c.actif ? "" : "opacity-55"}`}
               >
                 <span
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[13px] font-extrabold"
@@ -194,6 +237,14 @@ export function ComptesPage() {
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-2 text-[14.5px] font-extrabold text-paper">
                     {c.nom}
+                    {estSysteme && (
+                      <span
+                        className="flex items-center gap-1 rounded bg-ocean/20 px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-ocean-soft"
+                        title="Compte système : un seul Admin Antenne est autorisé — protégé contre toute modification."
+                      >
+                        <Lock size={9} aria-hidden /> Compte système · unique
+                      </span>
+                    )}
                     {!c.actif && (
                       <span className="flex items-center gap-1 rounded bg-ink-700 px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-mist">
                         <UserX size={9} aria-hidden /> Désactivé
@@ -207,7 +258,7 @@ export function ComptesPage() {
                   </p>
                 </div>
                 <Badge color={meta.color} soft={meta.soft}>{meta.label}</Badge>
-                {estDirecteur && (
+                {estDirecteur && !estSysteme && (
                   <div className="flex items-center gap-1.5">
                     <Button size="sm" variant="outline" onClick={() => basculerActif(c)}>
                       {c.actif ? "Désactiver" : "Réactiver"}
@@ -222,6 +273,11 @@ export function ComptesPage() {
                       <Trash2 size={15} />
                     </button>
                   </div>
+                )}
+                {estSysteme && (
+                  <span className="flex items-center gap-1.5 text-[11px] font-bold text-mist-dark" title="Protégé : création, modification et suppression interdites.">
+                    <Lock size={12} aria-hidden /> Protégé
+                  </span>
                 )}
               </motion.li>
             );

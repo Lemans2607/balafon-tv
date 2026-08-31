@@ -18,8 +18,8 @@ export const planbyTheme: Theme = {
   },
   loader: {
     teal: "#00F5A0",
-    purple: "#2E77D0",
-    pink: "#F2790F",
+    purple: "#0F6BD6",
+    pink: "#E31E24",
     bg: "#0B0E14db",
   },
   scrollbar: {

@@ -60,7 +60,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
               </span>
               <div>
                 <h1 className="font-black uppercase tracking-tight text-[#F7F8FA]">
-                  Balafon <span className="text-[#FF3D00]">+ Guide</span>
+                  Balafon <span className="text-balafon">+ Guide</span>
                 </h1>
                 <p className="text-[12px] font-semibold text-[#9CA3AF]">
                   Une erreur d’affichage est survenue
@@ -78,7 +78,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
                   localStorage.removeItem("balafon-app-v1");
                   window.location.reload();
                 }}
-                className="flex items-center gap-2 rounded-xl bg-[#F2790F] px-5 py-2.5 text-[13px] font-extrabold text-ink-950 transition-transform hover:scale-[1.02]"
+                className="flex items-center gap-2 rounded-xl bg-balafon px-5 py-2.5 text-[13px] font-extrabold text-white transition-transform hover:scale-[1.02]"
               >
                 <RotateCcw size={14} /> Réinitialiser et recharger
               </button>
@@ -138,7 +138,7 @@ class PageBoundary extends Component<{ label: string; children: ReactNode }, { e
           <button
             type="button"
             onClick={() => this.setState({ error: null })}
-            className="mt-4 rounded-lg bg-[#FF3D00] px-4 py-2 text-[12.5px] font-extrabold text-white"
+            className="mt-4 rounded-lg bg-balafon px-4 py-2 text-[12.5px] font-extrabold text-white"
           >
             Réessayer
           </button>

@@ -30,7 +30,7 @@ const SPACES: Array<{
     desc: "Le direct, le guide TV et le replay de Balafon TV — la chaîne TV uniquement, sans radio.",
     points: ["Hero du programme à l’antenne", "EPG 7 jours + ligne du direct", "Recherche, fiches & replay"],
     icon: <Tv size={20} />,
-    accent: "#F2790F",
+    accent: "#E31E24",
   },
   {
     role: "directeur",
@@ -40,7 +40,7 @@ const SPACES: Array<{
     desc: "L’administrateur de la plateforme : construit les grilles, gère les comptes de l’équipe et valide seul avant diffusion.",
     points: ["Constructeur EPG drag & drop", "Comptes & équipe", "Validation → portail public"],
     icon: <ShieldCheck size={20} />,
-    accent: "#F2790F",
+    accent: "#0F6BD6",
   },
   {
     role: "regie",

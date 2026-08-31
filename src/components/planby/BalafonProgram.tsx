@@ -101,8 +101,8 @@ export function BalafonProgram({ program, isBaseTimeFormat, mode, onSelect, onRe
     <div
       className="group/card absolute inset-0 overflow-hidden rounded-lg border bg-ink-800 p-2 text-left transition-all duration-200 hover:bg-ink-700"
       style={{
-        borderColor: data.isLive ? "rgba(255,61,0,0.75)" : "rgba(42,49,66,0.9)",
-        boxShadow: data.isLive ? "0 0 0 1px rgba(255,61,0,0.35), 0 6px 18px rgba(255,61,0,0.12)" : undefined,
+        borderColor: data.isLive ? "rgba(227,30,36,0.75)" : "rgba(42,49,66,0.9)",
+        boxShadow: data.isLive ? "0 0 0 1px rgba(227,30,36,0.35), 0 6px 18px rgba(227,30,36,0.14)" : undefined,
       }}
     >
       <span
@@ -200,7 +200,7 @@ export function BalafonProgram({ program, isBaseTimeFormat, mode, onSelect, onRe
 function LiveDot({ compact }: { compact?: boolean }) {
   return (
     <span
-      className="live-pulse inline-flex items-center gap-1 rounded-sm bg-balafon px-1 py-px text-[9px] font-extrabold uppercase tracking-wider text-ink-950"
+      className="live-pulse inline-flex items-center gap-1 rounded-sm bg-balafon px-1 py-px text-[9px] font-extrabold uppercase tracking-wider text-white"
       aria-label="En direct"
     >
       <span className="inline-block h-1.5 w-1.5 rounded-full bg-white" aria-hidden />

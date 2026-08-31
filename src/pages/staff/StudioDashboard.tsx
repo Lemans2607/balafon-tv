@@ -57,7 +57,7 @@ export function StudioDashboard() {
     {
       label: "À l’antenne",
       value: live.currentProgram?.title ?? "Hors antenne",
-      color: live.currentProgram && live.currentProgram.category !== "off-air" ? "#F2790F" : "#6B7280",
+      color: live.currentProgram && live.currentProgram.category !== "off-air" ? "#E31E24" : "#6B7280",
       sub: live.current ? `${live.current.startTime} – ${live.current.endTime}` : "Reprise à 06:00",
       to: "/tv",
     },

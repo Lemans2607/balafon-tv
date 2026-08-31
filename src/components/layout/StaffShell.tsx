@@ -187,7 +187,7 @@ export function StaffShell() {
             </h1>
             <span
               className="hidden rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider sm:inline"
-              style={{ background: "rgba(242,121,15,0.14)", color: "#FFA14D" }}
+              style={{ background: "rgba(227,30,36,0.16)", color: "#FF8A85" }}
             >
               {ROLE_LABEL[role]}
             </span>

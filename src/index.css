@@ -9,12 +9,12 @@
   --color-ink-600: #2b3345;
   --color-ink-500: #3c455c;
 
-  /* ----- Identité BALAFON : orange brand + bleu institutionnel ----- */
-  --color-balafon: #f2790f;
-  --color-balafon-deep: #cf5f00;
-  --color-balafon-soft: #ffa14d;
-  --color-ocean: #2e77d0;
-  --color-ocean-soft: #5c9ce8;
+  /* ----- Charte Balafon Media Corporation : Rouge · Bleu · Blanc · Noir ----- */
+  --color-balafon: #e31e24;
+  --color-balafon-deep: #b31217;
+  --color-balafon-soft: #ff5a55;
+  --color-ocean: #0f6bd6;
+  --color-ocean-soft: #5ea2f2;
   --color-studio: #00f5a0;
   --color-goldwarn: #ffb800;
   --color-crit: #ef4444;
@@ -42,7 +42,7 @@ body {
 
 /* ---------- Focus visible (WCAG) ---------- */
 :focus-visible {
-  outline: 2px solid #ff3d00;
+  outline: 2px solid #e31e24;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -82,14 +82,14 @@ body {
   background-size: 42px 42px;
 }
 .bg-noise-red {
-  background-image: radial-gradient(ellipse 80% 55% at 72% -10%, rgba(255, 61, 0, 0.16), transparent 60%),
-    radial-gradient(ellipse 60% 45% at 8% 108%, rgba(0, 245, 160, 0.05), transparent 60%);
+  background-image: radial-gradient(ellipse 80% 55% at 72% -10%, rgba(227, 30, 36, 0.16), transparent 60%),
+    radial-gradient(ellipse 60% 45% at 8% 108%, rgba(15, 107, 214, 0.08), transparent 60%);
 }
 
-/* ---------- Pulsation Live ---------- */
+/* ---------- Pulsation Live (rouge Balafon) ---------- */
 @keyframes livePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 61, 0, 0.55); }
-  55% { box-shadow: 0 0 0 7px rgba(255, 61, 0, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.55); }
+  55% { box-shadow: 0 0 0 7px rgba(227, 30, 36, 0); }
 }
 .live-pulse { animation: livePulse 1.8s ease-out infinite; }
 
@@ -118,28 +118,28 @@ body {
 .font-display { font-family: var(--font-display); }
 .tracking-tightest { letter-spacing: -0.03em; }
 
-/* Gros numéros éditoriaux façon Canal+ (contour orange, rempli au survol) */
+/* Gros numéros éditoriaux façon Canal+ (contour rouge Balafon, rempli au survol) */
 .num-outline {
   color: transparent;
-  -webkit-text-stroke: 1.5px rgba(242, 121, 15, 0.5);
+  -webkit-text-stroke: 1.5px rgba(227, 30, 36, 0.5);
   transition: color 0.25s ease, -webkit-text-stroke-color 0.25s ease;
 }
 .group:hover .num-outline,
 .num-outline:hover {
-  color: rgba(242, 121, 15, 0.9);
-  -webkit-text-stroke-color: rgba(242, 121, 15, 0.9);
+  color: rgba(227, 30, 36, 0.9);
+  -webkit-text-stroke-color: rgba(227, 30, 36, 0.9);
 }
 
 /* ---------- Halos ambiants (fond vivant, jamais plat) ---------- */
 .glow-balafon {
   background:
-    radial-gradient(ellipse 55% 42% at 82% -6%, rgba(242, 121, 15, 0.16), transparent 62%),
-    radial-gradient(ellipse 42% 36% at 4% 104%, rgba(46, 119, 208, 0.12), transparent 60%);
+    radial-gradient(ellipse 55% 42% at 82% -6%, rgba(227, 30, 36, 0.15), transparent 62%),
+    radial-gradient(ellipse 42% 36% at 4% 104%, rgba(15, 107, 214, 0.12), transparent 60%);
 }
 .glow-ocean {
   background:
-    radial-gradient(ellipse 50% 40% at 12% -8%, rgba(46, 119, 208, 0.14), transparent 60%),
-    radial-gradient(ellipse 46% 38% at 96% 102%, rgba(242, 121, 15, 0.1), transparent 62%);
+    radial-gradient(ellipse 50% 40% at 12% -8%, rgba(15, 107, 214, 0.15), transparent 60%),
+    radial-gradient(ellipse 46% 38% at 96% 102%, rgba(227, 30, 36, 0.09), transparent 62%);
 }
 
 /* Grain très léger pour casser les aplats */
@@ -166,7 +166,7 @@ body {
 .input-balafon::placeholder { color: #6d7688; }
 .input-balafon:focus {
   outline: none;
-  border-color: rgba(242, 121, 15, 0.7);
+  border-color: rgba(227, 30, 36, 0.7);
 }
 select.input-balafon option { background: #121724; }
 
@@ -180,7 +180,7 @@ select.input-balafon option { background: #121724; }
   left: 0;
   right: 0;
   height: 90px;
-  background: linear-gradient(to bottom, transparent, rgba(242, 121, 15, 0.05), transparent);
+  background: linear-gradient(to bottom, transparent, rgba(227, 30, 36, 0.05), transparent);
   animation: scanline 9s linear infinite;
   pointer-events: none;
 }

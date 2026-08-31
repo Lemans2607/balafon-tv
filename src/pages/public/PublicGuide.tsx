@@ -78,7 +78,7 @@ export function PublicGuide() {
                     <ProgramPoster program={live.currentProgram} className="h-full w-full object-cover" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <span className="live-pulse inline-flex items-center gap-1.5 rounded bg-balafon px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-ink-950">
+                    <span className="live-pulse inline-flex items-center gap-1.5 rounded bg-balafon px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest text-white">
                       <Radio size={9} aria-hidden /> Direct
                     </span>
                     <p className="mt-1 truncate text-[15px] font-extrabold">{live.currentProgram.title}</p>
@@ -112,7 +112,7 @@ export function PublicGuide() {
                   onClick={() => setCategory(f.id)}
                   className={`shrink-0 rounded-full border px-4 py-1.5 text-[12px] font-extrabold transition-all duration-200 ${
                     category === f.id
-                      ? "border-balafon bg-balafon text-ink-950 shadow-[0_4px_16px_rgba(242,121,15,0.35)]"
+                      ? "border-balafon bg-balafon text-white shadow-[0_4px_16px_rgba(227,30,36,0.4)]"
                       : "border-ink-600 bg-ink-900/70 text-mist hover:-translate-y-0.5 hover:border-ink-500 hover:text-paper"
                   }`}
                 >

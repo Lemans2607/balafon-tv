@@ -99,7 +99,7 @@ export function PublicHome() {
                   <Moon size={13} aria-hidden /> Hors antenne — reprise 06:00
                 </span>
               ) : (
-                <span className="live-pulse inline-flex items-center gap-2.5 rounded-md bg-balafon px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink-950">
+                <span className="live-pulse inline-flex items-center gap-2.5 rounded-md bg-balafon px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-white">
                   <span className="flex h-3 items-end gap-[3px]" aria-hidden>
                     <span className="eq-bar1 w-[3px] rounded-sm bg-ink-950" />
                     <span className="eq-bar2 w-[3px] rounded-sm bg-ink-950" />
@@ -168,7 +168,7 @@ export function PublicHome() {
                 <button
                   type="button"
                   onClick={() => setPlayerOpen(true)}
-                  className="group flex items-center gap-2.5 rounded-xl bg-balafon px-7 py-3.5 text-[14.5px] font-extrabold text-ink-950 shadow-[0_12px_36px_rgba(242,121,15,0.4)] transition-all hover:-translate-y-0.5 hover:bg-balafon-soft active:translate-y-0"
+                  className="group flex items-center gap-2.5 rounded-xl bg-balafon px-7 py-3.5 text-[14.5px] font-extrabold text-white shadow-[0_12px_36px_rgba(227,30,36,0.45)] transition-all hover:-translate-y-0.5 hover:bg-balafon-soft active:translate-y-0"
                 >
                   <Play size={17} className="transition-transform group-hover:scale-110" aria-hidden />
                   Regarder le direct
@@ -207,7 +207,7 @@ export function PublicHome() {
                 {current && !isOffAir ? (
                   <>
                     <ProgramPoster program={current} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]" />
-                    <span className="live-pulse absolute left-3.5 top-3.5 rounded-md bg-balafon px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest text-ink-950">
+                    <span className="live-pulse absolute left-3.5 top-3.5 rounded-md bg-balafon px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest text-white">
                       En direct
                     </span>
                   </>
@@ -405,7 +405,7 @@ function RailHeader({
   title,
   to,
   toLabel,
-  accent = "#F2790F",
+  accent = "#E31E24",
   dark = false,
 }: {
   kicker: string;

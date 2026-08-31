@@ -229,7 +229,7 @@ export function BalafonEpg({
           <button
             type="button"
             onClick={() => scrollToNow(false)}
-            className="flex items-center gap-1.5 rounded-lg bg-balafon px-3 py-2 text-[12px] font-bold text-white shadow-[0_4px_16px_rgba(255,61,0,0.35)] transition-transform hover:scale-[1.03] active:scale-95"
+            className="flex items-center gap-1.5 rounded-lg bg-balafon px-3 py-2 text-[12px] font-bold text-white shadow-[0_4px_16px_rgba(227,30,36,0.4)] transition-transform hover:scale-[1.03] active:scale-95"
           >
             <LocateFixed size={14} aria-hidden />
             Aller à maintenant
@@ -259,7 +259,7 @@ export function BalafonEpg({
         onDragLeave={onDropProgram ? () => setDropHover(false) : undefined}
         onDrop={onDropProgram ? handleDrop : undefined}
         className={`relative overflow-hidden rounded-xl border transition-colors ${
-          dropHover ? "border-balafon/70 shadow-[0_0_0_3px_rgba(242,121,15,0.18)]" : "border-ink-700"
+          dropHover ? "border-balafon/70 shadow-[0_0_0_3px_rgba(227,30,36,0.2)]" : "border-ink-700"
         }`}
         style={{ height: heightPx, background: "#0B0E14" }}
       >
@@ -291,7 +291,7 @@ export function BalafonEpg({
             style={{ left: playheadX }}
             aria-hidden
           >
-            <div className="h-full w-[2px] bg-balafon shadow-[0_0_10px_rgba(255,61,0,0.8)]" />
+            <div className="h-full w-[2px] bg-balafon shadow-[0_0_10px_rgba(227,30,36,0.85)]" />
             <div className="absolute left-1/2 top-1 -translate-x-1/2 rounded bg-balafon px-1.5 py-0.5 font-mono text-[10px] font-bold text-white">
               {formatClock(now).slice(0, 5)}
             </div>

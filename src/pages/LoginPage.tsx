@@ -56,7 +56,7 @@ export function LoginPage() {
 
   const rolesDemo = useMemo(
     () => [
-      { role: "directeur" as AppRole, vers: "/studio/directeur", label: "Direction d’Antenne", sous: "Comptes + grilles + validation", icone: <ShieldCheck size={15} />, teinte: "#F2790F" },
+      { role: "directeur" as AppRole, vers: "/studio/directeur", label: "Direction d’Antenne", sous: "Comptes + grilles + validation", icone: <ShieldCheck size={15} />, teinte: "#E31E24" },
       { role: "regie" as AppRole, vers: "/studio/regie", label: "Régie · Diffuseur", sous: "Lecture seule + alertes + vMix", icone: <Radio size={15} />, teinte: "#00F5A0" },
     ],
     []
@@ -176,7 +176,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={connexionEnCours}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-balafon px-5 py-3 text-[14px] font-extrabold text-ink-950 shadow-[0_10px_28px_rgba(242,121,15,0.35)] transition-all hover:-translate-y-0.5 hover:bg-balafon-soft active:translate-y-0 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-balafon px-5 py-3 text-[14px] font-extrabold text-white shadow-[0_10px_28px_rgba(227,30,36,0.4)] transition-all hover:-translate-y-0.5 hover:bg-balafon-soft active:translate-y-0 disabled:opacity-60"
             >
               {connexionEnCours ? "Connexion…" : "Se connecter"}
               {!connexionEnCours && <ArrowRight size={16} aria-hidden />}
