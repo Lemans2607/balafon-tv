@@ -1,5 +1,6 @@
 import { Component, useEffect, type ReactNode } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { AlertTriangle, RotateCcw } from "lucide-react";
@@ -20,6 +21,9 @@ import { AlertCenter } from "./pages/staff/AlertCenter";
 import { GridHistory } from "./pages/staff/GridHistory";
 import { SettingsPage } from "./pages/staff/SettingsPage";
 import { ToastHost } from "./components/ui";
+import { AuthProvider } from "./context/AuthContext";
+import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
+import { LoginPage } from "./pages/LoginPage";
 import { useScheduleStore } from "./store/scheduleStore";
 import { useAlertStore } from "./store/alertStore";
 import { useAppStore } from "./store/appStore";
@@ -161,7 +165,15 @@ function AnimatedOutlet() {
     >
       <Routes location={location}>
         <Route path="/tv/*" element={<PublicShell />} />
-        <Route path="/studio" element={<StaffShell />}>
+        <Route path="/login" element={page("Connexion", <LoginPage />)} />
+        <Route
+          path="/studio"
+          element={
+            <ProtectedRoute>
+              <StaffShell />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={page("Pilotage", <StudioDashboard />)} />
           <Route path="admin" element={page("Constructeur EPG", <AdminBuilder />)} />
           <Route path="directeur" element={page("Validation éditoriale", <DirecteurKanban />)} />
@@ -240,10 +252,20 @@ function Root() {
   );
 }
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 },
+  },
+});
+
 export default function App() {
   return (
     <ErrorBoundary>
-      <Root />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <Root />
+        </AuthProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
