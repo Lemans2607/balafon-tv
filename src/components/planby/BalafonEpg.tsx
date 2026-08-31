@@ -31,6 +31,13 @@ interface Props {
   onRemoveItem?: (scheduleId: string) => void;
   onMissingClick?: (data: PlanbyEpgData) => void;
   onDropProgram?: (programId: string, startMin: number) => void;
+  /** Expose l'API de scroll — pilotée par les chips horaires et le fil « En ce moment ». */
+  onApi?: (api: EpgScrollApi) => void;
+}
+
+export interface EpgScrollApi {
+  scrollToMinutes: (min: number) => void;
+  scrollToNow: (instant?: boolean) => void;
 }
 
 /* ============================================================
