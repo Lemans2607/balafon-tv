@@ -103,7 +103,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
               <button
                 type="button"
                 onClick={() => {
-                  localStorage.removeItem("balafon-schedule-v2");
+                  localStorage.removeItem("balafon-schedule-v3");
                   localStorage.removeItem("balafon-app-v1");
                   window.location.reload();
                 }}

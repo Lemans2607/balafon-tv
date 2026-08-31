@@ -68,6 +68,8 @@ export const CATALOGUE_EMISSIONS_BALAFON_TV: EmissionCatalogueDemo[] = [
     heure_debut: "07:00",
     fiabilite: "confirme",
     description: "Réveil matinal de la chaîne, du lundi au vendredi dès 7h.",
+    // Visuel réel : plateau de la matinale (Médiatude, mai 2022).
+    image_affiche: "https://mediatudecmr.com/wp-content/uploads/2022/05/IMG-20220503-WA0004_copy_1920x1080.jpg",
   },
   {
     titre: "Faut Pas Zapper",
@@ -137,6 +139,8 @@ export const CATALOGUE_EMISSIONS_BALAFON_TV: EmissionCatalogueDemo[] = [
     heure_debut: "16:00",
     fiabilite: "estime",
     description: "Actualité sportive (existence confirmée, jours/heure estimés).",
+    // Visuel réel : émission spéciale présentée sur Balafon TV (Médiatude).
+    image_affiche: "https://mediatudecmr.com/wp-content/uploads/2026/06/Jean-Paul-Choun-Nyat-390x220.jpg",
   },
   {
     titre: "Télé-Zoom",

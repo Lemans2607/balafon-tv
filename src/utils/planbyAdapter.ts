@@ -102,6 +102,8 @@ export interface EmissionCatalogueDemo {
   heure_fin?: string; // "HH:MM", optionnel (sinon durée par défaut selon le genre)
   fiabilite: "confirme" | "estime";
   description?: string;
+  /** Lien direct vers l'affiche réelle (hotlink presse) — repli local sinon. */
+  image_affiche?: string;
 }
 
 const JOURS_SEMAINE = [
