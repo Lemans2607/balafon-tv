@@ -1,30 +1,17 @@
-import { Component, useEffect, type ReactNode } from "react";
-import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Component, lazy, Suspense, useEffect, type ReactNode } from "react";
+import { HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { useLocation } from "react-router-dom";
 import { AlertTriangle, RotateCcw } from "lucide-react";
+
 import { PublicNavbar } from "./components/layout/PublicNavbar";
 import { PublicFooter } from "./components/layout/PublicFooter";
 import { StaffShell } from "./components/layout/StaffShell";
 import { PublicHome } from "./pages/public/PublicHome";
-import { PublicGuide } from "./pages/public/PublicGuide";
-import { PublicReplay } from "./pages/public/PublicReplay";
-import { ProgramDetails } from "./pages/public/ProgramDetails";
 import { DemoPage } from "./pages/DemoPage";
-import { StudioDashboard } from "./pages/staff/StudioDashboard";
-import { AdminBuilder } from "./pages/staff/AdminBuilder";
-import { DirecteurKanban, GridsPage } from "./pages/staff/DirecteurKanban";
-import { RegieControl } from "./pages/staff/RegieControl";
-import { ComptesPage } from "./pages/staff/ComptesPage";
-import { ProgramLibrary } from "./pages/staff/ProgramLibrary";
-import { AlertCenter } from "./pages/staff/AlertCenter";
-import { GridHistory } from "./pages/staff/GridHistory";
-import { SettingsPage } from "./pages/staff/SettingsPage";
 import { ToastHost } from "./components/ui";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
-import { LoginPage } from "./pages/LoginPage";
 import { useScheduleStore } from "./store/scheduleStore";
 import { useAlertStore } from "./store/alertStore";
 import { useAppStore } from "./store/appStore";
@@ -35,8 +22,50 @@ import { fetchGrillesValidees, isBackendConfigured } from "./services/backend";
 import { connectAlertStream } from "./services/realtime";
 
 /* ============================================================
-   ErrorBoundary — aucun écran blanc : toute erreur runtime
-   est affichée de façon lisible avec l’état de l’application.
+   Chargement différé — le bundle initial ne contient que le
+   portail d'accueil ; le Studio, l'EPG Planby et Recharts sont
+   chargés à la demande (navigation plus rapide, moins de risques
+   d'écran vide sur les connexions lentes).
+   ============================================================ */
+const PublicGuide = lazy(() => import("./pages/public/PublicGuide").then((m) => ({ default: m.PublicGuide })));
+const PublicReplay = lazy(() => import("./pages/public/PublicReplay").then((m) => ({ default: m.PublicReplay })));
+const ProgramDetails = lazy(() => import("./pages/public/ProgramDetails").then((m) => ({ default: m.ProgramDetails })));
+const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const StudioDashboard = lazy(() => import("./pages/staff/StudioDashboard").then((m) => ({ default: m.StudioDashboard })));
+const AdminBuilder = lazy(() => import("./pages/staff/AdminBuilder").then((m) => ({ default: m.AdminBuilder })));
+const DirecteurKanban = lazy(() => import("./pages/staff/DirecteurKanban").then((m) => ({ default: m.DirecteurKanban })));
+const GridsPage = lazy(() => import("./pages/staff/DirecteurKanban").then((m) => ({ default: m.GridsPage })));
+const RegieControl = lazy(() => import("./pages/staff/RegieControl").then((m) => ({ default: m.RegieControl })));
+const ComptesPage = lazy(() => import("./pages/staff/ComptesPage").then((m) => ({ default: m.ComptesPage })));
+const ProgramLibrary = lazy(() => import("./pages/staff/ProgramLibrary").then((m) => ({ default: m.ProgramLibrary })));
+const AlertCenter = lazy(() => import("./pages/staff/AlertCenter").then((m) => ({ default: m.AlertCenter })));
+const GridHistory = lazy(() => import("./pages/staff/GridHistory").then((m) => ({ default: m.GridHistory })));
+const SettingsPage = lazy(() => import("./pages/staff/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+
+/* Écran de chargement Balafon — jamais d'écran noir. */
+export function BootLoader({ label = "Chargement de l'antenne…" }: { label?: string }) {
+  return (
+    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-5 py-16">
+      <div className="flex items-end gap-1.5" aria-hidden>
+        {[...Array(5)].map((_, i) => (
+          <span
+            key={i}
+            className={`w-2.5 rounded-t bg-balafon ${["eq-bar1", "eq-bar2", "eq-bar3"][i % 3]}`}
+            style={{ height: `${22 + ((i * 13) % 34)}px`, animationDelay: `${i * 0.09}s` }}
+          />
+        ))}
+      </div>
+      <p className="font-display text-[22px] uppercase tracking-[0.08em] text-paper">
+        Balafon <span className="text-balafon">TV</span>
+      </p>
+      <p className="font-mono text-[10.5px] uppercase tracking-[0.24em] text-mist-dark">{label}</p>
+    </div>
+  );
+}
+
+/* ============================================================
+   ErrorBoundary — aucun écran blanc : toute erreur runtime est
+   affichée de façon lisible avec un chemin de sortie clair.
    ============================================================ */
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
@@ -46,15 +75,14 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   }
 
   componentDidCatch(error: Error) {
-    // Visible en console pour le diagnostic
-    console.error("[BALAFON + GUIDE] Erreur d’interface :", error);
+    console.error("[BALAFON + GUIDE] Erreur d'interface :", error);
   }
 
   render() {
     if (this.state.error) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-[#050505] p-6">
-          <div className="w-full max-w-lg rounded-2xl border border-[#EF4444]/40 bg-[#111622] p-8">
+          <div className="w-full max-w-lg rounded-2xl border border-[#EF4444]/40 bg-[#111622] p-8 shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EF4444]/15">
                 <AlertTriangle size={20} className="text-[#EF4444]" />
@@ -64,7 +92,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
                   Balafon <span className="text-balafon">+ Guide</span>
                 </h1>
                 <p className="text-[12px] font-semibold text-[#9CA3AF]">
-                  Une erreur d’affichage est survenue
+                  Une erreur d'affichage est survenue
                 </p>
               </div>
             </div>
@@ -99,29 +127,23 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   }
 }
 
-function PublicShell() {
+/* Transition de vue façon application native (fondu + élévation). */
+function AnimatedOutlet({ children }: { children: ReactNode }) {
+  const location = useLocation();
   return (
-    <div className="min-h-screen bg-[#050505] text-[#F7F8FA]">
-      <PublicNavbar />
-      <main>
-        <Routes>
-          <Route index element={<PublicHome />} />
-          <Route path="guide" element={<PublicGuide />} />
-          <Route path="replay" element={<PublicReplay />} />
-          <Route path="program/:id" element={<ProgramDetails />} />
-          <Route path="*" element={<Navigate to="/tv" replace />} />
-        </Routes>
-      </main>
-      <PublicFooter />
-    </div>
+    <motion.div
+      key={location.pathname}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
-/* ============================================================
-   Périmètre d'erreur par page : une page qui échoue affiche son
-   diagnostic dans le shell, sans casser la navigation.
-   ============================================================ */
-class PageBoundary extends Component<{ label: string; children: ReactNode }, { error: Error | null }> {
+/* Limite d'erreur propre à chaque page (le reste de l'app survit). */
+class PageBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   state = { error: null as Error | null };
   static getDerivedStateFromError(error: Error) {
     return { error };
@@ -129,13 +151,9 @@ class PageBoundary extends Component<{ label: string; children: ReactNode }, { e
   render() {
     if (this.state.error) {
       return (
-        <div className="mx-auto my-10 max-w-lg rounded-2xl border border-[#EF4444]/40 bg-[#111622] p-6">
-          <p className="text-[11px] font-extrabold uppercase tracking-widest text-[#9CA3AF]">
-            {this.props.label} — erreur d’affichage
-          </p>
-          <pre className="mt-3 max-h-32 overflow-auto rounded-lg border border-[#2A3142] bg-[#0B0E14] p-3 font-mono text-[11px] text-[#EF4444]">
-            {this.state.error.message}
-          </pre>
+        <div className="rounded-2xl border border-[#EF4444]/40 bg-[#EF4444]/5 p-6">
+          <p className="text-[14px] font-extrabold text-[#EF4444]">Cette section a rencontré un problème.</p>
+          <p className="mt-1 font-mono text-[11.5px] text-[#9CA3AF]">{this.state.error.message}</p>
           <button
             type="button"
             onClick={() => this.setState({ error: null })}
@@ -150,48 +168,31 @@ class PageBoundary extends Component<{ label: string; children: ReactNode }, { e
   }
 }
 
-const page = (label: string, el: ReactNode) => (
-  <PageBoundary label={label}>{el}</PageBoundary>
-);
-
-function AnimatedOutlet() {
-  const location = useLocation();
-  /* Transition de vue façon application native : fondu + légère élévation.
-     Entrée uniquement (pas de sortie bloquante) — navigation jamais en suspens. */
+function PublicShell() {
   return (
-    <motion.div
-      key={location.pathname}
-      initial={{ opacity: 0, y: 16, scale: 0.996 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-    >
-      <Routes location={location}>
-        <Route path="/tv/*" element={<PublicShell />} />
-        <Route path="/login" element={page("Connexion", <LoginPage />)} />
-        <Route
-          path="/studio"
-          element={
-            <ProtectedRoute>
-              <StaffShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={page("Pilotage", <StudioDashboard />)} />
-          <Route path="admin" element={page("Constructeur EPG", <AdminBuilder />)} />
-          <Route path="directeur" element={page("Validation éditoriale", <DirecteurKanban />)} />
-          <Route path="comptes" element={page("Comptes & équipe", <ComptesPage />)} />
-          <Route path="regie" element={page("Régie", <RegieControl />)} />
-          <Route path="programmes" element={page("Bibliothèque", <ProgramLibrary />)} />
-          <Route path="grilles" element={page("Grilles", <GridsPage />)} />
-          <Route path="alertes" element={page("Alertes", <AlertCenter />)} />
-          <Route path="historique" element={page("Historique", <GridHistory />)} />
-          <Route path="parametres" element={page("Paramètres", <SettingsPage />)} />
-          <Route path="*" element={<Navigate to="/studio" replace />} />
-        </Route>
-        <Route path="/demo" element={page("Démo", <DemoPage />)} />
-        <Route path="*" element={<Navigate to="/tv" replace />} />
-      </Routes>
-    </motion.div>
+    <div className="flex min-h-screen flex-col bg-ink-950">
+      <PublicNavbar />
+      <main className="flex-1">
+        <Routes>
+          <Route index element={page("Accueil", <PublicHome />)} />
+          <Route path="guide" element={page("Guide TV", <PublicGuide />)} />
+          <Route path="replay" element={page("Replay", <PublicReplay />)} />
+          <Route path="program/:id" element={page("Programme", <ProgramDetails />)} />
+          <Route path="*" element={<Navigate to="/tv" replace />} />
+        </Routes>
+      </main>
+      <PublicFooter />
+    </div>
+  );
+}
+
+function page(title: string, node: ReactNode) {
+  return (
+    <AnimatedOutlet>
+      <PageBoundary>
+        <Suspense fallback={<BootLoader />}>{node}</Suspense>
+      </PageBoundary>
+    </AnimatedOutlet>
   );
 }
 
@@ -204,13 +205,19 @@ function Root() {
     el.style.colorScheme = theme;
   }, [theme]);
 
+  /* Garde-fou : un rôle obsolète persisté (ex. ancien "admin") revient sur un rôle valide. */
+  useEffect(() => {
+    const app = useAppStore.getState();
+    if (app.role !== "public" && app.role !== "directeur" && app.role !== "regie") {
+      app.setRole("public");
+    }
+  }, []);
+
   /* ============================================================
      Amorçage :
      1. démo locale (catalogue embarqué) — toujours disponible ;
-     2. si VITE_API_URL répond → hydratation depuis Django
-        (GET /api/grilles/?statut=validee, adaptateur Planby) ;
-     3. si VITE_WS_URL est défini → flux d’alertes temps réel
-        (Django Channels) injecté dans l’alertStore.
+     2. si VITE_API_URL répond → hydratation depuis Django ;
+     3. si VITE_WS_URL est défini → flux d'alertes temps réel.
      ============================================================ */
   useEffect(() => {
     let stopStream: (() => void) | undefined;
@@ -221,17 +228,14 @@ function Root() {
         useScheduleStore.getState().ensureSeed();
         const alertState = useAlertStore.getState();
         if (alertState.alerts.length === 0) alertState.setAlerts(buildSeedData().alerts);
-      /* Garde-fou : une date sélectionnée obsolète revient sur aujourd’hui */
-      const app = useAppStore.getState();
-      if (app.selectedDate < todayKey()) app.setSelectedDate(todayKey());
-      /* Garde-fou : le rôle « admin » (ancienne version) n’existe plus —
-         le Directeur d’Antenne est l’admin de la plateforme. */
-      if ((app.role as string) === "admin") app.setRole("directeur");
+        const app = useAppStore.getState();
+        if (app.selectedDate < todayKey()) app.setSelectedDate(todayKey());
+
         if (isBackendConfigured()) {
           const grilles = await fetchGrillesValidees();
           if (!cancelled && grilles) {
             useScheduleStore.getState().hydrateFromApi(grilles);
-            console.info("[BALAFON + GUIDE] EPG hydraté depuis l’API Django.");
+            console.info("[BALAFON + GUIDE] EPG hydraté depuis l'API Django.");
           }
         }
 
@@ -246,7 +250,7 @@ function Root() {
           });
         });
       } catch (e) {
-        console.error("[BALAFON + GUIDE] Erreur d’amorçage des données :", e);
+        console.error("[BALAFON + GUIDE] Erreur d'amorçage des données :", e);
       }
     };
 
@@ -259,7 +263,33 @@ function Root() {
 
   return (
     <HashRouter>
-      <AnimatedOutlet />
+      <Routes>
+        <Route index element={<Navigate to="/tv" replace />} />
+        <Route path="/demo" element={page("Démo", <DemoPage />)} />
+        <Route path="/login" element={page("Connexion", <LoginPage />)} />
+        <Route path="/tv/*" element={<PublicShell />} />
+        <Route
+          path="/studio"
+          element={
+            <ProtectedRoute>
+              <StaffShell />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={page("Pilotage", <StudioDashboard />)} />
+          <Route path="admin" element={page("Constructeur EPG", <AdminBuilder />)} />
+          <Route path="directeur" element={page("Validation éditoriale", <DirecteurKanban />)} />
+          <Route path="grilles" element={page("Grilles", <GridsPage />)} />
+          <Route path="comptes" element={page("Comptes & équipe", <ComptesPage />)} />
+          <Route path="regie" element={page("Régie", <RegieControl />)} />
+          <Route path="programmes" element={page("Bibliothèque", <ProgramLibrary />)} />
+          <Route path="alertes" element={page("Alertes", <AlertCenter />)} />
+          <Route path="historique" element={page("Historique", <GridHistory />)} />
+          <Route path="parametres" element={page("Paramètres", <SettingsPage />)} />
+          <Route path="*" element={<Navigate to="/studio" replace />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/tv" replace />} />
+      </Routes>
       <ToastHost />
     </HashRouter>
   );
@@ -270,10 +300,8 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      /* Stratégie de cache : données fraîches 5 min, conservées 30 min
-         (la grille reste consultable hors-ligne par la régie). */
-      staleTime: 5 * 60 * 1000,
-      gcTime: 30 * 60 * 1000,
+      staleTime: 5 * 60_000, // la grille reste fraîche 5 min
+      gcTime: 30 * 60_000, // conservée 30 min en cache (consultation hors-ligne)
       networkMode: "offlineFirst",
     },
   },
