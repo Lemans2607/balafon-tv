@@ -48,7 +48,7 @@ export function SettingsPage() {
     }
   };
 
-  const user = role !== "public" ? USERS[role] : USERS.admin;
+  const user = role !== "public" ? USERS[role] : USERS.directeur;
   const vMeta = VMIX_STATUS_META[vmix.status];
 
   const doReset = () => {

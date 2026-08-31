@@ -66,14 +66,21 @@ backend/                scaffold Django : docker-compose, settings, charger_emis
 
 ## Rôles & routes
 
+**Deux rôles métier** : le **Directeur d'Antenne** est l'administrateur de la plateforme
+(construction des grilles, gestion des comptes, validation éditoriale exclusive) ; le
+**Diffuseur** (régie) consulte en lecture seule, acquitte les alertes et synchronise vMix.
+Le rôle « admin antenne » séparé n'existe pas.
+
 | Route | Accès |
 |---|---|
-| `/demo` | Sélecteur d’espace (changement de rôle sans rechargement) |
+| `/demo` | Sélecteur d'espace (changement de rôle sans rechargement) |
+| `/login` | Connexion JWT (mode API) ou accès démo |
 | `/tv`, `/tv/guide`, `/tv/replay`, `/tv/program/:id` | Portail public |
-| `/studio` | Pilotage (tous rôles staff) |
-| `/studio/admin` | Admin — constructeur EPG (drag & drop, complétude, soumission) |
-| `/studio/directeur` | Directeur — Kanban de validation éditoriale |
-| `/studio/regie` | Régie — mission control lecture seule + alertes + vMix |
+| `/studio` | Pilotage (Direction + Régie) |
+| `/studio/admin` | Constructeur EPG — Direction d'Antenne (drag & drop, complétude, soumission, export CSV/PDF) |
+| `/studio/directeur` | Kanban de validation éditoriale + analyse d'occupation |
+| `/studio/comptes` | Comptes & équipe — Direction d'Antenne uniquement |
+| `/studio/regie` | Poste de diffusion (PGM/PVW, Gantt, plein écran, alertes, vMix) |
 | `/studio/programmes` `/studio/grilles` `/studio/alertes` `/studio/historique` `/studio/parametres` | Studio |
 
 ## Intégration Planby — audit

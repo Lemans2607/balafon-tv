@@ -194,7 +194,7 @@ export const useScheduleStore = create<ScheduleState>()(
               id: `log-api-${Date.now()}`,
               at: isoLocal(new Date()),
               user: "API Django",
-              role: "admin",
+              role: "directeur",
               action: "Hydratation depuis le backend",
               details: `${Object.keys(scheduleMap).length} jour(s) de grille chargés depuis GET /api/grilles/?statut=validee.`,
               severity: "info",
@@ -343,8 +343,8 @@ export const useScheduleStore = create<ScheduleState>()(
             : [...get().programs, program],
           logs: [
             makeLog({
-              user: "Sandra Kamga",
-              role: "admin",
+              user: "Martin Essomba",
+              role: "directeur",
               action: exists ? "Modification programme" : "Création programme",
               details: `« ${program.title} » (${program.durationMinutes} min) ${exists ? "mis à jour" : "ajouté à la bibliothèque"}.`,
               severity: "info",
@@ -360,8 +360,8 @@ export const useScheduleStore = create<ScheduleState>()(
           programs: get().programs.filter((x) => x.id !== id),
           logs: [
             makeLog({
-              user: "Sandra Kamga",
-              role: "admin",
+              user: "Martin Essomba",
+              role: "directeur",
               action: "Suppression programme",
               details: `« ${p?.title ?? id} » retiré de la bibliothèque.`,
               severity: "warning",

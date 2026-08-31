@@ -45,20 +45,21 @@ export function AdminBuilder() {
   const [pendingRemove, setPendingRemove] = useState<ScheduleItem | null>(null);
   const [picker, setPicker] = useState<{ open: boolean; startMin: number; endMin: number }>({ open: false, startMin: 0, endMin: 0 });
 
-  if (role !== "admin" && role !== "directeur") {
+  if (role !== "directeur") {
     return (
       <div className="rounded-2xl border border-goldwarn/40 bg-goldwarn/8 p-8 text-center">
         <ShieldAlert size={28} className="mx-auto text-goldwarn" aria-hidden />
-        <h1 className="font-display mt-3 text-xl font-extrabold text-paper">Accès réservé — Direction & Admin Antenne</h1>
+        <h1 className="font-display mt-3 text-xl font-extrabold text-paper">Accès réservé — Direction d’Antenne</h1>
         <p className="mx-auto mt-2 max-w-md text-[13.5px] text-mist">
-          Le constructeur de grille est opéré par la Direction d’Antenne. Basculez de rôle depuis la page de démonstration.
+          Le constructeur de grille est opéré par le Directeur d’Antenne (administrateur de la plateforme).
+          Basculez de rôle depuis la page de démonstration.
         </p>
         <Button className="mt-5" onClick={() => navigate("/demo")}>Changer de rôle</Button>
       </div>
     );
   }
 
-  const user = role === "directeur" ? USERS.directeur : USERS.admin;
+  const user = USERS.directeur;
   const grid = grids[selectedDate];
   const gridStatus = grid?.status ?? "draft";
   const items = scheduleMap[selectedDate] ?? [];
@@ -85,7 +86,7 @@ export function AdminBuilder() {
   };
 
   const applyAdd = (programId: string, startMin: number, silentCritical = false) => {
-    const res = addScheduleItem({ programId, date: selectedDate, startMin, user: user.name, role: "admin" });
+    const res = addScheduleItem({ programId, date: selectedDate, startMin, user: user.name, role: "directeur" });
     const program = programs.find((p) => p.id === programId);
     if (!res.ok) {
       toast({ title: "Dépôt refusé", message: res.error, tone: "error" });
@@ -99,7 +100,7 @@ export function AdminBuilder() {
         action: {
           label: "Annuler",
           onClick: () => {
-            removeScheduleItem({ itemId: res.item!.id, date: selectedDate, user: user.name, role: "admin" });
+            removeScheduleItem({ itemId: res.item!.id, date: selectedDate, user: user.name, role: "directeur" });
             toast({ title: "Ajout annulé", message: `« ${program?.title} » a été retiré de la grille.`, tone: "info" });
           },
         },
@@ -116,7 +117,7 @@ export function AdminBuilder() {
       return;
     }
     const program = programs.find((p) => p.id === item.programId);
-    removeScheduleItem({ itemId: scheduleId, date: selectedDate, user: user.name, role: "admin" });
+    removeScheduleItem({ itemId: scheduleId, date: selectedDate, user: user.name, role: "directeur" });
     toast({
       title: "Programme retiré",
       message: `« ${program?.title} » (${item.startTime}–${item.endTime}) retiré de la grille.`,
@@ -129,7 +130,7 @@ export function AdminBuilder() {
             date: selectedDate,
             startMin: toMinutes(item.startTime),
             user: user.name,
-            role: "admin",
+            role: "directeur",
           });
         },
       },
@@ -154,7 +155,7 @@ export function AdminBuilder() {
   const confirmCriticalRemove = () => {
     if (!pendingRemove) return;
     const program = programs.find((p) => p.id === pendingRemove.programId);
-    removeScheduleItem({ itemId: pendingRemove.id, date: selectedDate, user: user.name, role: "admin" });
+    removeScheduleItem({ itemId: pendingRemove.id, date: selectedDate, user: user.name, role: "directeur" });
     raiseCriticalAlert(
       `Retrait de « ${program?.title} »`,
       `« ${program?.title} » (${pendingRemove.startTime}–${pendingRemove.endTime}) retiré de la grille validée du ${selectedDate}. Créneau désormais vide.`,
@@ -168,14 +169,14 @@ export function AdminBuilder() {
       severity: "critical",
       title: `Modification d’une grille validée — ${title}`,
       message: `${message}\nAction requise dans vMix. Modification en attente d’acquittement par la Régie.`,
-      source: "admin",
+      source: "director",
       actionRequired: true,
       relatedScheduleId: item.id,
     });
     sendChange(`${title} (${item.startTime}–${item.endTime}, ${selectedDate})`);
     addLog({
       user: user.name,
-      role: "admin",
+      role: "directeur",
       action: "Modification critique de grille validée",
       details: `${title} — grille du ${selectedDate}. Alerte transmise à la Régie et à vMix.`,
       severity: "critical",
@@ -193,12 +194,12 @@ export function AdminBuilder() {
       toast({ title: "Soumission impossible", message: verdict.reasons[0], tone: "error" });
       return;
     }
-    setGridStatus({ date: selectedDate, status: "pending", user: user.name, role: "admin" });
+    setGridStatus({ date: selectedDate, status: "pending", user: user.name, role: "directeur" });
     toast({ title: "Grille soumise pour validation", message: `La grille du ${selectedDate} attend l’approbation du Directeur d’Antenne.`, tone: "info" });
   };
 
   const publish = () => {
-    setGridStatus({ date: selectedDate, status: "validated", user: user.name, role: "admin", note: `Publication de la grille du ${selectedDate} (validée).` });
+    setGridStatus({ date: selectedDate, status: "validated", user: user.name, role: "directeur", note: `Publication de la grille du ${selectedDate} (validée).` });
     toast({ title: "Grille publiée", message: `La grille du ${selectedDate} est visible sur le portail public.`, tone: "success" });
   };
 

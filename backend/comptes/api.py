@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Utilisateur
-from .permissions import EstAdministrateur
+from .permissions import EstDirecteurAntenne
 
 
 class UtilisateurSerializer(serializers.ModelSerializer):
@@ -106,8 +106,8 @@ def profil(request) -> Response:
 
 
 class CompteViewSet(viewsets.ModelViewSet):
-    """CRUD des comptes — réservé aux administrateurs."""
+    """CRUD des comptes — réservé au Directeur d'Antenne (admin de la plateforme)."""
 
     queryset = Utilisateur.objects.all().order_by("id")
     serializer_class = UtilisateurSerializer
-    permission_classes = [EstAdministrateur]
+    permission_classes = [EstDirecteurAntenne]

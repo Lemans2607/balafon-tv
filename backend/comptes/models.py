@@ -1,10 +1,13 @@
 """
 Modèle Utilisateur — authentification et RBAC.
 
-Un seul modèle avec un champ `role` à trois valeurs (administrateur,
-directeur_antenne, diffuseur) plutôt qu'un héritage multi-tables :
-plus simple à maintenir et strictement équivalent au diagramme de classes
-(Utilisateur abstraite → Administrateur / Diffuseur, Directeur = spécialisation).
+Un seul modèle avec un champ `role` à DEUX valeurs métier :
+    - directeur_antenne : construit les grilles, gère les comptes,
+      et détient le droit EXCLUSIF de validation éditoriale ;
+    - diffuseur         : régie de diffusion (lecture, alertes, synchro vMix).
+
+Le rôle « administrateur » a été supprimé : le Directeur d'Antenne EST
+l'administrateur de la plateforme (cf. rapport de stage).
 """
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -14,7 +17,6 @@ class Utilisateur(AbstractUser):
     """Compte utilisateur de la plateforme, identifié par son email."""
 
     class Role(models.TextChoices):
-        ADMINISTRATEUR = "administrateur", "Administrateur"
         DIRECTEUR_ANTENNE = "directeur_antenne", "Directeur d'Antenne"
         DIFFUSEUR = "diffuseur", "Diffuseur (régie)"
 
@@ -30,7 +32,7 @@ class Utilisateur(AbstractUser):
     fonction = models.CharField(
         max_length=120,
         blank=True,
-        help_text="Fonction occupée (pertinent pour admin / directeur).",
+        help_text="Fonction occupée (pertinent pour le Directeur d'Antenne).",
     )
     poste_regie = models.CharField(
         max_length=120,
@@ -50,10 +52,6 @@ class Utilisateur(AbstractUser):
 
     # ------------------------------------------------------------------ RBAC
     @property
-    def est_administrateur(self) -> bool:
-        return self.role == self.Role.ADMINISTRATEUR
-
-    @property
     def est_directeur_antenne(self) -> bool:
         return self.role == self.Role.DIRECTEUR_ANTENNE
 
@@ -63,5 +61,5 @@ class Utilisateur(AbstractUser):
 
     @property
     def peut_gerer_grille(self) -> bool:
-        """Admin et Directeur peuvent créer/modifier grilles et émissions."""
-        return self.role in (self.Role.ADMINISTRATEUR, self.Role.DIRECTEUR_ANTENNE)
+        """Seul le Directeur d'Antenne crée/modifie grilles, émissions et comptes."""
+        return self.est_directeur_antenne

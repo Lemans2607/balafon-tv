@@ -2,30 +2,31 @@
 API vMix — synchronisation et health-check.
 
 Endpoints (préfixés /api/vmix/ dans urls.py) :
-    POST /vmix/synchroniser/{grille_id}/   [admin, directeur, diffuseur]
+    POST /vmix/synchroniser/{grille_id}/   [directeur_antenne, diffuseur]
     GET  /vmix/etat/                       health-check du connecteur
 """
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import BasePermission, IsAuthenticated
 from rest_framework.response import Response
 
-from comptes.permissions import EstAdminOuDirecteur, EstDiffuseur
 from programmation.models import Grille
 
 from .models import SynchroVmix
 from .services import get_client
 
 
-class EstEquipeAntenne(EstAdminOuDirecteur):
-    """Admin, Directeur ou Diffuseur peuvent déclencher une synchro."""
+class EstEquipeAntenne(BasePermission):
+    """Directeur d'Antenne ou Diffuseur peuvent déclencher une synchro."""
+
+    message = "Réservé à l'équipe d'antenne (Directeur ou Diffuseur)."
 
     def has_permission(self, request, view) -> bool:
         user = request.user
         return bool(
             user
             and user.is_authenticated
-            and (user.peut_gerer_grille or user.est_diffuseur)
+            and (user.est_directeur_antenne or user.est_diffuseur)
         )
 
 

@@ -1,7 +1,8 @@
 """
 Fixtures partagées pour les tests pytest-django.
 
-Crée les trois profils RBAC et une chaîne + grille de démonstration.
+Deux profils RBAC (Directeur d'Antenne / Diffuseur) + une chaîne et une
+grille de démonstration créée par le Directeur.
 """
 from datetime import date
 
@@ -24,11 +25,6 @@ def _utilisateur(email: str, role: str, mot_de_passe: str = "Passw0rd!2026") -> 
 
 
 @pytest.fixture
-def admin() -> Utilisateur:
-    return _utilisateur("admin@balafon.test", Utilisateur.Role.ADMINISTRATEUR)
-
-
-@pytest.fixture
 def directeur() -> Utilisateur:
     return _utilisateur("directeur@balafon.test", Utilisateur.Role.DIRECTEUR_ANTENNE)
 
@@ -44,12 +40,12 @@ def chaine_tv() -> Chaine:
 
 
 @pytest.fixture
-def grille_brouillon(chaine_tv, admin) -> Grille:
+def grille_brouillon(chaine_tv, directeur) -> Grille:
     grille = Grille.objects.create(
         chaine=chaine_tv,
         date_debut=date.today(),
         date_fin=date.today(),
-        cree_par=admin,
+        cree_par=directeur,
     )
     # Deux émissions sans chevauchement.
     base = timezone.now().replace(hour=6, minute=0, second=0, microsecond=0)
@@ -62,13 +58,6 @@ def grille_brouillon(chaine_tv, admin) -> Grille:
         heure_debut=base.replace(hour=19, minute=30), heure_fin=base.replace(hour=20),
     )
     return grille
-
-
-@pytest.fixture
-def client_admin(admin) -> APIClient:
-    client = APIClient()
-    client.force_authenticate(user=admin)
-    return client
 
 
 @pytest.fixture

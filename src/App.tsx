@@ -221,10 +221,12 @@ function Root() {
         useScheduleStore.getState().ensureSeed();
         const alertState = useAlertStore.getState();
         if (alertState.alerts.length === 0) alertState.setAlerts(buildSeedData().alerts);
-        /* Garde-fou : une date sélectionnée obsolète revient sur aujourd’hui */
-        const app = useAppStore.getState();
-        if (app.selectedDate < todayKey()) app.setSelectedDate(todayKey());
-
+      /* Garde-fou : une date sélectionnée obsolète revient sur aujourd’hui */
+      const app = useAppStore.getState();
+      if (app.selectedDate < todayKey()) app.setSelectedDate(todayKey());
+      /* Garde-fou : le rôle « admin » (ancienne version) n’existe plus —
+         le Directeur d’Antenne est l’admin de la plateforme. */
+      if ((app.role as string) === "admin") app.setRole("directeur");
         if (isBackendConfigured()) {
           const grilles = await fetchGrillesValidees();
           if (!cancelled && grilles) {

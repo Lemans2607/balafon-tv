@@ -15,14 +15,8 @@ import { detectScheduleGaps } from "../utils/validation";
    Fenêtre d'antenne : 06:00 → 24:00 · Hors antenne 00:00 → 06:00.
    ============================================================ */
 
+/* Deux rôles métier : le Directeur d'Antenne est l'admin de la plateforme. */
 export const USERS: Record<string, UserAccount> = {
-  admin: {
-    id: "u-admin",
-    name: "Sandra Kamga",
-    role: "admin",
-    roleLabel: "Administratrice Antenne",
-    initials: "SK",
-  },
   directeur: {
     id: "u-directeur",
     name: "Martin Essomba",
@@ -260,7 +254,7 @@ export function buildSeedData(): {
       id: "log-seed-2",
       at: nowIso,
       user: SYSTEM_USER,
-      role: "admin",
+      role: "directeur",
       action: "Import du catalogue Balafon TV",
       details: `Semaine générée depuis emissions_reelles_balafon_tv.json (sources : balafon.media, Le Jour — horaires « estimés » signalés dans les fiches).`,
       severity: "info",
@@ -268,8 +262,8 @@ export function buildSeedData(): {
     {
       id: "log-seed-3",
       at: nowIso,
-      user: USERS.admin.name,
-      role: "admin",
+      user: USERS.directeur.name,
+      role: "directeur",
       action: "Construction de grille",
       details: `Grille du ${incompleteDay} laissée volontairement incomplète (${gaps.length} créneaux à combler) pour la démonstration.`,
       severity: "warning",
