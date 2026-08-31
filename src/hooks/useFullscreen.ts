@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /* ============================================================
-   Plein écran (Fullscreen API) — maximise la zone de
-   visualisation de la régie pour le mur d'écrans.
+   useFullscreen — bascule plein écran (Fullscreen API) pour la
+   zone de visualisation de la régie. Repli propre si l'API est
+   indisponible (iframe sandboxé, ancien navigateur).
    ============================================================ */
 export function useFullscreen<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-
-  const supported =
-    typeof document !== "undefined" &&
-    Boolean(document.documentElement.requestFullscreen);
 
   useEffect(() => {
     const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
@@ -18,14 +15,19 @@ export function useFullscreen<T extends HTMLElement>() {
     return () => document.removeEventListener("fullscreenchange", onChange);
   }, []);
 
-  const toggle = useCallback(() => {
-    if (!supported) return;
-    if (document.fullscreenElement) {
-      void document.exitFullscreen().catch(() => undefined);
-    } else {
-      void ref.current?.requestFullscreen().catch(() => undefined);
+  const toggle = useCallback(async () => {
+    const el = ref.current;
+    if (!el) return;
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await el.requestFullscreen();
+      }
+    } catch {
+      /* API indisponible : on ignore silencieusement */
     }
-  }, [supported]);
+  }, []);
 
-  return { ref, isFullscreen, toggle, supported };
+  return { ref, isFullscreen, toggle };
 }

@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import {
   Activity,
   AlertOctagon,
   ArrowLeft,
-  ArrowRight,
   Lock,
+  Maximize2,
+  Minimize2,
   RefreshCw,
   Satellite,
   ShieldCheck,
+  Tv2,
   Wifi,
   WifiOff,
   Zap,
@@ -19,15 +20,19 @@ import { useScheduleStore } from "../../store/scheduleStore";
 import { useAppStore } from "../../store/appStore";
 import { useCurrentProgram, useNow } from "../../hooks/useNow";
 import { useGrilleQuery } from "../../hooks/useGrilleQuery";
+import { useFullscreen } from "../../hooks/useFullscreen";
 import { GrilleGantt } from "../../components/charts/GrilleGantt";
-import { dateKey, formatHM, sinceISO, tillISO } from "../../utils/time";
+import { dateKey, formatClock, formatHM } from "../../utils/time";
 import { BalafonEpg } from "../../components/planby/BalafonEpg";
 import type { PlanbyEpgData } from "../../components/planby/planbyMappers";
 import { AlertCard } from "../../components/alerts/AlertCard";
-import { Badge, Button, LiveBadge, Modal, ProgressBar, SimClock } from "../../components/ui";
+import { Badge, Button, Modal, SimClock } from "../../components/ui";
 import { ProgramPoster } from "../../components/media/ProgramPoster";
-import { CATEGORY_META } from "../../types";
+import { CATEGORY_META, type Program } from "../../types";
 import { USERS } from "../../data/schedules";
+import { synopsisDe } from "../../data/synopses";
+import { HERO_BACKDROP } from "../../data/programs";
+import type { ScheduleItem } from "../../types";
 
 /* ============================================================
    RÉGIE — Mission Control (lecture seule)
@@ -85,99 +90,71 @@ export function RegieControl() {
   };
 
   const programs = useScheduleStore((s) => s.programs);
-  const prevProgram = live.previous ? programs.find((p) => p.id === live.previous!.programId) ?? null : null;
+  void programs;
 
-  const SlotCard = ({
-    label,
-    title,
-    time,
-    color,
-    progress,
-    live: isLive,
-    category,
-  }: {
-    label: string;
-    title: string;
-    time?: string;
-    color: string;
-    progress?: number;
-    live?: boolean;
-    category?: keyof typeof CATEGORY_META;
-  }) => (
-    <div className="relative overflow-hidden rounded-2xl border border-ink-700 bg-ink-800 p-4">
-      <span className="absolute inset-x-0 top-0 h-[3px]" style={{ background: color }} aria-hidden />
-      <p className="text-[10px] font-extrabold uppercase tracking-widest text-mist-dark">{label}</p>
-      <p className="mt-1.5 truncate font-display text-[15px] font-extrabold text-paper">{title}</p>
-      <div className="mt-1 flex items-center gap-2">
-        {time && <span className="font-mono text-[11.5px] tabular-nums text-mist">{time}</span>}
-        {category && (
-          <span className="rounded-sm px-1.5 py-px text-[9px] font-extrabold uppercase" style={{ background: CATEGORY_META[category].soft, color: CATEGORY_META[category].color }}>
-            {CATEGORY_META[category].label}
-          </span>
-        )}
-        {isLive && <LiveBadge size="sm" />}
-      </div>
-      {typeof progress === "number" && (
-        <div className="mt-2.5">
-          <ProgressBar value={progress} />
-        </div>
-      )}
-    </div>
-  );
+  const { ref: fsRef, isFullscreen, toggle } = useFullscreen<HTMLDivElement>();
+
+  const pgmItem = live.current ?? null;
+  const pgmProgram = live.currentProgram ?? null;
+  const pvwItem = live.next ?? null;
+  const pvwProgram = live.nextProgram ?? null;
+  const isPgmLive = pgmProgram !== null && pgmProgram.category !== "off-air";
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_350px]">
-      <div className="min-w-0 space-y-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge color="#00F5A0" soft="rgba(0,245,160,0.12)">
-            <Lock size={10} /> Lecture seule
-          </Badge>
-          <p className="text-[12.5px] text-mist">
-            Grille du <strong className="text-paper">{today}</strong> — la régie ne peut ni déplacer, ni modifier, ni publier.
-          </p>
-          {grilleQuery.depuisCache && (
-            <Badge color="#FFB800" soft="rgba(255,184,0,0.14)">
-              Hors-ligne — grille en cache
+    <div ref={fsRef} className="space-y-6">
+      <BroadcastHeader
+        now={now}
+        vmixStatus={vmix.status}
+        vMetaColor={vMeta.color}
+        isFullscreen={isFullscreen}
+        onToggle={toggle}
+      />
+
+      {/* ===== Mur de moniteurs PGM / PVW ===== */}
+      <div className="grid gap-5 xl:grid-cols-2">
+        <RegieMonitor
+          kind="pgm"
+          label="Moniteur 1 — Programme Actuel à l'Antenne"
+          program={pgmProgram}
+          item={pgmItem}
+          isLive={isPgmLive}
+          progress={live.progress}
+        />
+        <RegieMonitor
+          kind="pvw"
+          label="Moniteur 2 — Programme Suivant (Preview)"
+          program={pvwProgram}
+          item={pvwItem}
+          isLive={false}
+        />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_350px]">
+        <div className="min-w-0 space-y-5">
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge color="#00F5A0" soft="rgba(0,245,160,0.12)">
+              <Lock size={10} /> Lecture seule
             </Badge>
-          )}
-          <span
-            className="ml-auto flex items-center gap-1.5 rounded-lg border border-ink-600 bg-ink-800 px-3 py-1.5 text-[11.5px] font-bold"
-            style={{ color: vMeta.color }}
-          >
-            {vmix.status === "disconnected" ? <WifiOff size={12} aria-hidden /> : <Wifi size={12} aria-hidden />}
-            vMix · {vMeta.label}
-          </span>
-        </div>
+            <p className="text-[12.5px] text-mist">
+              Grille du <strong className="text-paper">{today}</strong> — la régie ne peut ni déplacer, ni modifier, ni publier.
+            </p>
+            {grilleQuery.depuisCache && (
+              <Badge color="#FFB800" soft="rgba(255,184,0,0.14)">
+                Hors-ligne — grille en cache
+              </Badge>
+            )}
+            <span
+              className="ml-auto flex items-center gap-1.5 rounded-lg border border-ink-600 bg-ink-800 px-3 py-1.5 text-[11.5px] font-bold"
+              style={{ color: vMeta.color }}
+            >
+              {vmix.status === "disconnected" ? <WifiOff size={12} aria-hidden /> : <Wifi size={12} aria-hidden />}
+              vMix · {vMeta.label}
+            </span>
+          </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <SlotCard
-            label="Précédent"
-            title={prevProgram?.title ?? "—"}
-            color="#6B7280"
-            time={live.previous ? `${live.previous.startTime} – ${live.previous.endTime}` : undefined}
-            category={prevProgram?.category}
-          />
-          <SlotCard
-            label="En cours"
-            title={live.currentProgram ? live.currentProgram.title : "Hors antenne"}
-            color="#E31E24"
-            time={live.current ? `${live.current.startTime} – ${live.current.endTime}` : "00:00 – 06:00"}
-            progress={live.currentProgram && live.currentProgram.category !== "off-air" ? live.progress : undefined}
-            live={live.currentProgram !== null && live.currentProgram.category !== "off-air"}
-            category={live.currentProgram?.category}
-          />
-          <SlotCard
-            label="Suivant"
-            title={live.nextProgram ? live.nextProgram.title : "Fin d’antenne"}
-            color="#3B82F6"
-            time={live.next ? `${live.next.startTime} – ${live.next.endTime}` : undefined}
-            category={live.nextProgram?.category}
-          />
-        </div>
-
-        <div className="rounded-2xl border border-ink-700 bg-ink-800/60 p-4">
-          <BalafonEpg date={today} mode="regie" now={now} heightPx={240} onSelectItem={setDetail} />
-        </div>
+          <div className="rounded-2xl border border-ink-700 bg-ink-800/60 p-4">
+            <BalafonEpg date={today} mode="regie" now={now} heightPx={240} onSelectItem={setDetail} />
+          </div>
 
         {/* Timeline Gantt de la journée */}
         <section className="panel p-5" aria-label="Timeline de la journée">
@@ -302,10 +279,214 @@ export function RegieControl() {
           </div>
         )}
       </Modal>
+        </div>
+      </div>
     </div>
   );
 }
 
 function formatTime(iso: string): string {
   return iso.slice(0, 16).replace("T", " ");
+}
+
+/* ============================================================
+   Bandeau « Poste de Diffusion & Régie vMix » — horloge d'antenne,
+   état du master vMix, niveaux audio, bascule plein écran.
+   ============================================================ */
+function BroadcastHeader({
+  now,
+  vmixStatus,
+  vMetaColor,
+  isFullscreen,
+  onToggle,
+}: {
+  now: Date;
+  vmixStatus: string;
+  vMetaColor: string;
+  isFullscreen: boolean;
+  onToggle: () => void;
+}) {
+  const connected = vmixStatus !== "disconnected";
+  return (
+    <section className="panel relative overflow-hidden px-5 py-4" aria-label="Poste de diffusion">
+      <span className="absolute inset-x-0 top-0 flex h-[3px]" aria-hidden>
+        <span className="flex-1 bg-balafon" />
+        <span className="flex-1 bg-ocean" />
+        <span className="flex-1 bg-paper/80" />
+      </span>
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+        <div className="flex items-center gap-5">
+          <div className="flex items-center gap-2.5">
+            <span className={`relative flex h-3 w-3 ${connected ? "" : "opacity-40"}`} aria-hidden>
+              <span className={`absolute inline-flex h-full w-full rounded-full ${connected ? "soft-blink bg-studio" : "bg-mist-dark"}`} />
+              <span className="relative inline-flex h-3 w-3 rounded-full border border-ink-950 bg-studio" />
+            </span>
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.18em]" style={{ color: connected ? "#00F5A0" : "#6B7280" }}>
+                {connected ? "vMix Master Connecté" : "vMix Master Hors ligne"}
+              </p>
+              <p className="font-mono text-[10px] text-mist-dark">Endpoint : http://127.0.0.1:8088/api</p>
+            </div>
+          </div>
+          <span className="hidden h-9 w-px bg-ink-600 sm:block" aria-hidden />
+          <div>
+            <p className="font-display text-[24px] uppercase leading-none tracking-wide text-paper">
+              Régie Master <span className="text-balafon">Balafon TV</span>
+            </p>
+            <p className="mt-1 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-mist-dark">
+              <Tv2 size={11} aria-hidden /> Poste de Diffusion · UTC+1
+            </p>
+          </div>
+        </div>
+
+        {/* Niveaux audio (VU-mètres décoratifs) */}
+        <div className="hidden items-end gap-[3px] md:flex" style={{ height: 34 }} aria-hidden>
+          {[...Array(10)].map((_, i) => (
+            <span
+              key={i}
+              className={`w-[5px] rounded-t ${["eq-bar1", "eq-bar2", "eq-bar3"][i % 3]} ${connected ? "bg-studio/80" : "bg-ink-600"}`}
+              style={{ height: `${30 + ((i * 23) % 60)}%`, animationDelay: `${i * 0.07}s` }}
+            />
+          ))}
+        </div>
+
+        <div className="ml-auto flex items-center gap-4">
+          <div className="text-right">
+            <p className="font-mono text-[42px] font-bold leading-none tabular-nums text-paper">{formatClock(now)}</p>
+            <p className="mt-1 font-mono text-[9.5px] uppercase tracking-[0.26em]" style={{ color: vMetaColor }}>
+              Heure Antenne UTC+1
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={isFullscreen ? "Quitter le plein écran" : "Passer en plein écran"}
+            title={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
+            className="rounded-lg border border-ink-600 bg-ink-800 p-2.5 text-mist transition-colors hover:border-balafon/60 hover:text-balafon"
+          >
+            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   Moniteur de régie (PGM = à l'antenne / PVW = preview).
+   ============================================================ */
+function RegieMonitor({
+  kind,
+  label,
+  program,
+  item,
+  isLive,
+  progress,
+}: {
+  kind: "pgm" | "pvw";
+  label: string;
+  program: Program | null;
+  item: ScheduleItem | null;
+  isLive: boolean;
+  progress?: number;
+}) {
+  const isPgm = kind === "pgm";
+  const accent = isPgm ? "#E31E24" : "#00F5A0";
+  const backdrop = (program?.backdropUrl || program?.posterUrl || HERO_BACKDROP) as string;
+  const synopsis = program ? synopsisDe(program.id) : null;
+  const category = program ? CATEGORY_META[program.category] : null;
+
+  return (
+    <section className="flex flex-col" aria-label={label}>
+      <p className="mb-2 font-mono text-[10.5px] font-bold uppercase tracking-[0.22em] text-mist-dark">{label}</p>
+
+      {/* Châssis du moniteur */}
+      <div
+        className="rounded-xl border-2 bg-[#07090f] p-1.5 shadow-[0_18px_44px_rgba(2,4,9,0.6)]"
+        style={{ borderColor: `${accent}66`, boxShadow: `0 0 0 1px ${accent}22, 0 18px 44px rgba(2,4,9,0.6)` }}
+      >
+        <div className="relative aspect-video overflow-hidden rounded-lg bg-ink-950">
+          {program && program.category !== "off-air" ? (
+            <>
+              <img
+                src={backdrop}
+                alt=""
+                onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
+                className={`h-full w-full object-cover opacity-60 ${isPgm ? "kenburns" : ""}`}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink-950 via-ink-950/25 to-ink-950/20" />
+              {isPgm && <div className="scanline" aria-hidden />}
+            </>
+          ) : (
+            <div className="glow-ocean flex h-full w-full items-center justify-center">
+              <p className="font-mono text-[12px] uppercase tracking-[0.3em] text-mist-dark">
+                {isPgm ? "Hors antenne" : "Aucun programme suivant"}
+              </p>
+            </div>
+          )}
+
+          {/* Tally + bus technique */}
+          <div className="absolute left-3 top-3 flex items-center gap-2">
+            {isPgm ? (
+              <span className="live-pulse flex items-center gap-1.5 rounded bg-balafon px-2 py-1 text-[10px] font-extrabold uppercase tracking-widest text-white">
+                <span className="h-1.5 w-1.5 rounded-full bg-white" aria-hidden /> En Direct (PGM)
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 rounded bg-studio px-2 py-1 text-[10px] font-extrabold uppercase tracking-widest text-ink-950">
+                <span className="h-1.5 w-1.5 rounded-full bg-ink-950" aria-hidden /> À Suivre
+              </span>
+            )}
+          </div>
+          <span className="absolute right-3 top-3 flex items-center gap-1.5 rounded bg-ink-950/75 px-2 py-1 font-mono text-[9.5px] font-bold uppercase tracking-wider text-mist backdrop-blur">
+            {isPgm ? (
+              <>
+                <span className="soft-blink h-1.5 w-1.5 rounded-full bg-balafon" aria-hidden /> 1080p60 • SDI OUT
+              </>
+            ) : (
+              "Preview Bus"
+            )}
+          </span>
+
+          {/* Lower-third OSD */}
+          {program && program.category !== "off-air" && (
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-950/95 via-ink-950/70 to-transparent px-4 pb-3 pt-8">
+              <div className="flex items-center gap-2">
+                {item && (
+                  <span className="rounded bg-balafon/15 px-2 py-0.5 font-mono text-[12px] font-bold tabular-nums text-balafon">
+                    {item.startTime} - {item.endTime}
+                  </span>
+                )}
+                {category && (
+                  <span className="rounded px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest" style={{ background: category.soft, color: category.color }}>
+                    {category.label}
+                  </span>
+                )}
+              </div>
+              <h3 className="font-display mt-1.5 truncate text-[30px] uppercase leading-none text-paper">{program.title}</h3>
+              <p className="mt-1 line-clamp-2 max-w-xl text-[12px] leading-snug text-mist">{program.description}</p>
+            </div>
+          )}
+
+          {/* Barre de progression (PGM) */}
+          {isPgm && typeof progress === "number" && (
+            <div className="absolute inset-x-0 bottom-0 h-[3px] bg-ink-800" aria-hidden>
+              <div className="h-full bg-balafon transition-[width] duration-700" style={{ width: `${Math.round(progress)}%` }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Générique + horodatage sous le moniteur */}
+      <div className="mt-2.5 flex items-center justify-between gap-3 px-1">
+        <p className="truncate text-[12px] font-semibold text-mist">
+          {program && program.category !== "off-air"
+            ? synopsis?.credits ?? (isPgm ? "À l'antenne : Balafon TV" : "Balafon TV")
+            : "—"}
+        </p>
+        {isPgm && typeof progress === "number" && (
+          <span className="shrink-0 font-mono text-[11px] font-bold tabular-nums text-balafon">{Math.round(progress)} %</span>
+        )}
+      </div>
+    </section>
+  );
 }

@@ -12,6 +12,8 @@ export interface SynopsisEmission {
   moments: string[];
   /** Ligne de présentation courte (animé par…, format…) */
   format?: string;
+  /** Générique affiché sous le moniteur de régie (« À l'antenne : … », « Présentation : … ») */
+  credits?: string;
 }
 
 export const SYNOPSES: Record<string, SynopsisEmission> = {
@@ -24,6 +26,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "La chronique conso et les bons plans du Grand Douala",
     ],
     format: "Infotainment quotidien · du lundi au vendredi · 07:00 – 09:00",
+    credits: "À l'antenne : Équipe Matinale",
   },
   "p-faut-pas-zapper": {
     intro:
@@ -34,6 +37,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "Le face-à-face final avec l'invité fil rouge",
     ],
     format: "Talk-show · du lundi au vendredi · 18:00",
+    credits: "Présentation : Animateurs & Journalistes Balafon TV",
   },
   "p-femme-au-controle": {
     intro:
@@ -44,6 +48,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "Le conseil pratique de l'experte invitée",
     ],
     format: "Magazine de société · du lundi au jeudi · 17:00 – 18:00",
+    credits: "Présentation : Panel Société",
   },
   "p-les-meufs": {
     intro:
@@ -54,6 +59,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "Le verdict du panel : pour ou contre ?",
     ],
     format: "Magazine · chaque vendredi · 17:00",
+    credits: "Présentation : Claire Luce Angouandé",
   },
   "p-top-25-hit-parade": {
     intro:
@@ -64,6 +70,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "Le numéro 1 révélé en fin d'émission",
     ],
     format: "Classement musical · samedi · 15:00",
+    credits: "À l'antenne : Équipe Musicale Balafon TV",
   },
   "p-c-le-weekend": {
     intro:
@@ -74,6 +81,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "La question du public posée en direct",
     ],
     format: "Grand entretien · samedi · 20:30",
+    credits: "Présentation : Cyrille Bojiko",
   },
   "p-grand-plateau": {
     intro:
@@ -84,6 +92,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "Le tour des régions et l'actualité internationale",
     ],
     format: "Journal télévisé · tous les jours · 19:30",
+    credits: "À l'antenne : Rédaction Centrale Balafon TV",
   },
   "p-entretien": {
     intro:
@@ -94,6 +103,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "Le mot de la fin, en une phrase",
     ],
     format: "Entretien · mardi et jeudi · 20:00",
+    credits: "Interviews : Rédaction Balafon TV",
   },
   "p-moment-de-sports": {
     intro:
@@ -104,6 +114,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "L'agenda sportif de la semaine",
     ],
     format: "Magazine sportif · lundi, mercredi, vendredi · 16:00",
+    credits: "À l'antenne : Rédaction des Sports",
   },
   "p-tele-zoom": {
     intro:
@@ -114,6 +125,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "Le portrait d'un créateur ou d'une créatrice",
     ],
     format: "Magazine culturel · du lundi au vendredi · 15:00",
+    credits: "Magazine : Équipe Culture",
   },
   "p-grand-deballage": {
     intro:
@@ -124,6 +136,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "Le verdict des téléspectateurs en direct",
     ],
     format: "Téléréalité · dimanche · 20:00",
+    credits: "Présentation : Médiatrice Rachel & Collège d'experts",
   },
   "p-telemarche": {
     intro:
@@ -144,6 +157,7 @@ export const SYNOPSES: Record<string, SynopsisEmission> = {
       "La bande-annonce des épisodes de la semaine",
     ],
     format: "Case séries · tous les jours · 21:00",
+    credits: "Case : Fiction Balafon TV",
   },
   "p-rediff": {
     intro:
