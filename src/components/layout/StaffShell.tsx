@@ -24,6 +24,7 @@ import { formatClock } from "../../utils/time";
 import { USERS } from "../../data/schedules";
 import { BALAFON_LOGO_URI } from "../planby/planbyMappers";
 import { Button, Drawer } from "../ui";
+import { ThemeToggle } from "../ui/ThemeToggle";
 import type { AppRole } from "../../types";
 
 /* Le Directeur d'Antenne EST l'administrateur de la plateforme :
@@ -153,12 +154,15 @@ export function StaffShell() {
             <p className="truncate text-[10.5px] text-mist-dark">{user.roleLabel}</p>
           </div>
         </div>
-        <Link
-          to="/demo"
-          className="mt-3 block rounded-lg border border-ink-600 px-3 py-2 text-center text-[11.5px] font-bold text-mist transition-colors hover:border-balafon hover:text-balafon"
-        >
-          Changer de rôle
-        </Link>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <ThemeToggle />
+          <Link
+            to="/demo"
+            className="flex-1 rounded-lg border border-ink-600 px-2 py-2 text-center text-[11px] font-bold text-mist transition-colors hover:border-balafon hover:text-balafon"
+          >
+            Changer de rôle
+          </Link>
+        </div>
       </div>
     </div>
   );

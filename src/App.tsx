@@ -28,6 +28,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { useScheduleStore } from "./store/scheduleStore";
 import { useAlertStore } from "./store/alertStore";
 import { useAppStore } from "./store/appStore";
+import { useThemeStore } from "./store/themeStore";
 import { buildSeedData } from "./data/schedules";
 import { todayKey } from "./utils/time";
 import { fetchGrillesValidees, isBackendConfigured } from "./services/backend";
@@ -195,6 +196,14 @@ function AnimatedOutlet() {
 }
 
 function Root() {
+  /* Synchronise le thème (sombre / clair) sur <html> */
+  const theme = useThemeStore((s) => s.theme);
+  useEffect(() => {
+    const el = document.documentElement;
+    el.classList.toggle("theme-light", theme === "light");
+    el.style.colorScheme = theme;
+  }, [theme]);
+
   /* ============================================================
      Amorçage :
      1. démo locale (catalogue embarqué) — toujours disponible ;
@@ -256,7 +265,15 @@ function Root() {
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 },
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      /* Stratégie de cache : données fraîches 5 min, conservées 30 min
+         (la grille reste consultable hors-ligne par la régie). */
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+      networkMode: "offlineFirst",
+    },
   },
 });
 

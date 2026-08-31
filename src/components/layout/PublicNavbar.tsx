@@ -8,6 +8,7 @@ import { todayKey } from "../../utils/time";
 import { CATEGORY_META } from "../../types";
 import { BALAFON_LOGO_URI } from "../planby/planbyMappers";
 import { Drawer } from "../ui";
+import { ThemeToggle } from "../ui/ThemeToggle";
 
 export function PublicNavbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -147,6 +148,10 @@ export function PublicNavbar() {
           <span className="hidden lg:inline max-w-40 truncate">{liveTitle}</span>
           <span className="lg:hidden">Direct</span>
         </Link>
+
+        <span className="ml-1 hidden sm:block">
+          <ThemeToggle compact />
+        </span>
 
         <Link
           to="/demo"

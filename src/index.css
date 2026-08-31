@@ -34,10 +34,66 @@ html {
 
 body {
   font-family: var(--font-body);
-  background: #050505;
-  color: #f7f8fa;
+  background: var(--color-ink-950);
+  color: var(--color-paper);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* ---------- Thème clair (Balafon Plus) ----------
+   Seules les neutres basculent ; le rouge #E31E24 et le bleu
+   #0F6BD6 de la marque restent identiques. */
+.theme-light {
+  --color-ink-950: #eceef3;
+  --color-ink-900: #f6f7f9;
+  --color-ink-850: #ffffff;
+  --color-ink-800: #ffffff;
+  --color-ink-700: #e2e5ec;
+  --color-ink-600: #d2d7e1;
+  --color-ink-500: #bdc4d2;
+  --color-paper: #131822;
+  --color-mist: #556072;
+  --color-mist-dark: #8b94a5;
+  color-scheme: light;
+}
+.theme-light ::-webkit-scrollbar-track { background: #f6f7f9; }
+.theme-light ::-webkit-scrollbar-thumb { background: #d2d7e1; }
+
+/* Sélection aux couleurs de la marque */
+::selection {
+  background: rgba(227, 30, 36, 0.85);
+  color: #ffffff;
+}
+
+/* Toile EPG — reste un « moniteur broadcast » sombre même en thème clair,
+   pour garantir la lisibilité de la grille horaire. */
+.epg-surface {
+  --color-ink-950: #07080c;
+  --color-ink-900: #0b0e15;
+  --color-ink-850: #0f1320;
+  --color-ink-800: #121724;
+  --color-ink-700: #1b2130;
+  --color-ink-600: #2b3345;
+  --color-ink-500: #3c455c;
+  --color-paper: #f7f8fa;
+  --color-mist: #a3abbb;
+  --color-mist-dark: #6d7688;
+  color-scheme: dark;
+}
+
+/* Liseré tricolore signature Balafon (rouge · blanc · bleu) */
+.brand-rule {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #e31e24 0%,
+    #e31e24 33%,
+    #f7f8fa 33%,
+    #f7f8fa 50%,
+    #0f6bd6 50%,
+    #0f6bd6 100%
+  );
 }
 
 /* ---------- Focus visible (WCAG) ---------- */

@@ -17,6 +17,7 @@ import { useVmixStore, VMIX_STATUS_META } from "../../store/vmixStore";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { useAppStore } from "../../store/appStore";
 import { useCurrentProgram, useNow } from "../../hooks/useNow";
+import { useGrilleQuery } from "../../hooks/useGrilleQuery";
 import { dateKey, formatHM, sinceISO, tillISO } from "../../utils/time";
 import { BalafonEpg } from "../../components/planby/BalafonEpg";
 import type { PlanbyEpgData } from "../../components/planby/planbyMappers";
@@ -46,6 +47,9 @@ export function RegieControl() {
   const unacked = alerts.filter((a) => !a.acknowledged);
   const acked = alerts.filter((a) => a.acknowledged).slice(0, 5);
   const vMeta = VMIX_STATUS_META[vmix.status];
+
+  /* Cache React Query : la dernière grille reste consultable hors-ligne. */
+  const grilleQuery = useGrilleQuery();
 
   const onAck = (id: string) => {
     acknowledge(id, user.name);
@@ -131,6 +135,11 @@ export function RegieControl() {
           <p className="text-[12.5px] text-mist">
             Grille du <strong className="text-paper">{today}</strong> — la régie ne peut ni déplacer, ni modifier, ni publier.
           </p>
+          {grilleQuery.depuisCache && (
+            <Badge color="#FFB800" soft="rgba(255,184,0,0.14)">
+              Hors-ligne — grille en cache
+            </Badge>
+          )}
           <span
             className="ml-auto flex items-center gap-1.5 rounded-lg border border-ink-600 bg-ink-800 px-3 py-1.5 text-[11.5px] font-bold"
             style={{ color: vMeta.color }}

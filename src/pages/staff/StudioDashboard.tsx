@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Activity, ArrowRight, Bell, MonitorPlay, Radio } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Activity, ArrowRight, BarChart3, Bell, LayoutDashboard, MonitorPlay, Radio } from "lucide-react";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { useAlertStore } from "../../store/alertStore";
 import { useVmixStore, VMIX_STATUS_META } from "../../store/vmixStore";
@@ -11,7 +12,10 @@ import { ADMIN_DAY_START, DAY_END } from "../../utils/time";
 import { STATUS_META } from "../../types";
 import { BalafonEpg } from "../../components/planby/BalafonEpg";
 import { AlertCard } from "../../components/alerts/AlertCard";
+import { GenreChart } from "../../components/charts/GenreChart";
 import { ProgressBar, SimClock } from "../../components/ui";
+
+type DashboardTab = "pilotage" | "analyse";
 
 export function StudioDashboard() {
   const now = useNow(1000);
@@ -31,6 +35,7 @@ export function StudioDashboard() {
   const unacked = alerts.filter((a) => !a.acknowledged);
   const vMeta = VMIX_STATUS_META[vmixStatus];
   const gridMeta = STATUS_META[grid?.status ?? "draft"];
+  const [tab, setTab] = useState<DashboardTab>("pilotage");
 
   const stats = [
     {
@@ -84,7 +89,47 @@ export function StudioDashboard() {
         ))}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
+      {/* Barre d'onglets — fondu Framer Motion au changement */}
+      <div className="flex items-center gap-1 border-b border-ink-700" role="tablist" aria-label="Sections du tableau de bord">
+        {(
+          [
+            { id: "pilotage", label: "Pilotage", icon: <LayoutDashboard size={15} /> },
+            { id: "analyse", label: "Analyse des genres", icon: <BarChart3 size={15} /> },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={`relative flex items-center gap-2 px-4 py-2.5 text-[13px] font-extrabold transition-colors ${
+              tab === t.id ? "text-balafon" : "text-mist hover:text-paper"
+            }`}
+          >
+            {t.icon}
+            {t.label}
+            {tab === t.id && (
+              <motion.span
+                layoutId="dash-tab-underline"
+                className="absolute inset-x-2 -bottom-px h-[3px] rounded-t bg-balafon"
+                aria-hidden
+              />
+            )}
+          </button>
+        ))}
+      </div>
+
+      <AnimatePresence mode="wait">
+        {tab === "pilotage" && (
+          <motion.div
+            key="pilotage"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            <div className="grid gap-6 xl:grid-cols-[1fr_340px]">
         <section className="rounded-2xl border border-ink-700 bg-ink-800/70 p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-display flex items-center gap-2 text-[16px] font-extrabold text-paper">
@@ -143,7 +188,51 @@ export function StudioDashboard() {
 
           <SimClock compact />
         </div>
-      </div>
+            </div>
+          </motion.div>
+        )}
+
+        {tab === "analyse" && (
+          <motion.div
+            key="analyse"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="grid gap-6 xl:grid-cols-[1fr_340px]"
+          >
+            <section className="rounded-2xl border border-ink-700 bg-ink-800/70 p-5">
+              <h2 className="font-display flex items-center gap-2 text-[16px] font-extrabold text-paper">
+                <BarChart3 size={16} className="text-ocean-soft" aria-hidden /> Répartition des genres — grilles validées
+              </h2>
+              <p className="mt-1 text-[12px] text-mist-dark">
+                Nombre de diffusions par genre, calculé sur l’ensemble des grilles validées et publiées.
+              </p>
+              <div className="mt-4">
+                <GenreChart />
+              </div>
+            </section>
+
+            <div className="space-y-6">
+              <section className="rounded-2xl border border-ink-700 bg-ink-800/70 p-5">
+                <h2 className="font-display mb-3 text-[15px] font-extrabold text-paper">Lecture éditoriale</h2>
+                <p className="text-[12.5px] leading-relaxed text-mist">
+                  Cette vue agrège les grilles <strong className="text-studio">validées pour diffusion</strong>. Elle
+                  aide la Direction d’Antenne à vérifier l’équilibre de la ligne éditoriale (information, talk, culture,
+                  sport, musique) avant publication.
+                </p>
+                <Link
+                  to="/studio/directeur"
+                  className="mt-4 inline-flex items-center gap-1 text-[12.5px] font-bold text-balafon hover:text-balafon-soft"
+                >
+                  Ouvrir la validation éditoriale <ArrowRight size={13} aria-hidden />
+                </Link>
+              </section>
+              <SimClock compact />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <p className="flex items-center gap-2 text-[11px] text-mist-dark">
         <Radio size={11} aria-hidden /> Balafon Studio pilote exclusivement l’antenne de Balafon TV (pas de radio). Fuseau Africa/Douala.

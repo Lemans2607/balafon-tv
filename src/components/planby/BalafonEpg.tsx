@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Epg, Layout, useEpg } from "planby";
-import { ChevronLeft, ChevronRight, List, LocateFixed } from "lucide-react";
+import { ChevronLeft, ChevronRight, LocateFixed } from "lucide-react";
+
 import { useScheduleStore } from "../../store/scheduleStore";
-import { CATEGORY_META } from "../../types";
-import type { GridStatus } from "../../types";
+import type { GridStatus, ProgramCategory } from "../../types";
 import { formatClock, labelDay, snap30, toMinutes } from "../../utils/time";
 import { useMediaQuery, usePlayheadX } from "../../hooks/useNow";
 import { EPG_GEOMETRY, PLANBY_GLOBAL_CSS, planbyTheme } from "./planbyTheme";
@@ -17,6 +17,15 @@ import { BalafonProgram } from "./BalafonProgram";
 import { BalafonChannel } from "./BalafonChannel";
 import { BalafonTimeline } from "./BalafonTimeline";
 
+/* ============================================================
+   API de scroll exposée aux pages (chips horaires, fil « En ce
+   moment », bouton « Maintenant »).
+   ============================================================ */
+export interface EpgScrollApi {
+  scrollToMinutes: (min: number) => void;
+  scrollToNow: (instant?: boolean) => void;
+}
+
 interface Props {
   date: string;
   mode: EpgMode;
@@ -25,28 +34,24 @@ interface Props {
   heightPx?: number;
   showControls?: boolean;
   gridStatus?: GridStatus | null;
-  categoryFilter?: string | null;
+  categoryFilter?: ProgramCategory | null;
   publicGate?: boolean;
   onSelectItem?: (data: PlanbyEpgData) => void;
   onRemoveItem?: (scheduleId: string) => void;
   onMissingClick?: (data: PlanbyEpgData) => void;
   onDropProgram?: (programId: string, startMin: number) => void;
-  /** Expose l'API de scroll — pilotée par les chips horaires et le fil « En ce moment ». */
   onApi?: (api: EpgScrollApi) => void;
 }
 
-export interface EpgScrollApi {
-  scrollToMinutes: (min: number) => void;
-  scrollToNow: (instant?: boolean) => void;
-}
+/** Repères horaires pour la navigation rapide (portail public). */
+const TIME_MARKERS: Array<{ label: string; min: number }> = [
+  { label: "Matin", min: 6 * 60 },
+  { label: "Midi", min: 12 * 60 },
+  { label: "Après-midi", min: 15 * 60 },
+  { label: "Prime time", min: 20 * 60 },
+  { label: "Nuit", min: 23 * 60 },
+];
 
-/* ============================================================
-   BalafonEpg — moteur EPG Planby (affichage principal)
-   - timeline horizontale, heures, ligne de chaînes, virtualisation
-   - playhead rouge synchronisé sur l'heure simulée
-   - fallback HTML5 Drag & Drop (fonction non incluse dans Planby libre)
-   - bascule automatique en liste verticale sur mobile
-   ============================================================ */
 export function BalafonEpg({
   date,
   mode,
@@ -61,6 +66,7 @@ export function BalafonEpg({
   onRemoveItem,
   onMissingClick,
   onDropProgram,
+  onApi,
 }: Props) {
   const scheduleMap = useScheduleStore((s) => s.scheduleMap);
   const programs = useScheduleStore((s) => s.programs);
@@ -81,11 +87,10 @@ export function BalafonEpg({
     return () => ro.disconnect();
   }, []);
 
-  /* Re-calcul des états live/progress chaque minute (léger) */
+  /* Données métier → Planby (re-calculées à la minute près) */
   const nowBucket = Math.floor(now.getTime() / 60000);
   const rawItems = scheduleMap[date] ?? [];
   const items = useMemo(() => {
-    /* Portail public : seules les grilles validées + publiées sont diffusées */
     if (publicGate) {
       const g = grids[date];
       if (!g || g.status !== "validated" || !g.published) return [];
@@ -105,7 +110,6 @@ export function BalafonEpg({
         now: new Date(nowBucket * 60000),
         gridStatus,
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [items, programs, date, mode, nowBucket, gridStatus]
   );
 
@@ -121,7 +125,7 @@ export function BalafonEpg({
     height: heightPx,
     isSidebar: true,
     isTimeline: true,
-    isLine: false, // playhead custom (heure simulée + rouge Balafon)
+    isLine: false,
     isBaseTimeFormat: false,
     dayWidth: EPG_GEOMETRY.dayWidth,
     sidebarWidth: EPG_GEOMETRY.sidebarWidth,
@@ -138,22 +142,14 @@ export function BalafonEpg({
     return (content?.parentElement as HTMLElement) ?? null;
   }, []);
 
-  const scrollToNow = useCallback(
-    (instant: boolean) => {
+  /* ---------- Scroll programmatique ---------- */
+  const scrollToMinutes = useCallback(
+    (min: number, instant = false) => {
       const el = getScrollEl();
       if (!el) return;
-      const n = new Date(now);
-      const key = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(
-        n.getDate()
-      ).padStart(2, "0")}`;
-      if (key !== date) {
-        el.scrollTo({ left: 0, behavior: instant ? "auto" : "smooth" });
-        return;
-      }
-      const minutes = n.getHours() * 60 + n.getMinutes() - dayStartMin;
       const target = Math.max(
         0,
-        minutes * pxPerMinute - el.clientWidth / 2 + layout.sidebarWidth
+        (min - dayStartMin) * pxPerMinute - el.clientWidth / 2 + layout.sidebarWidth
       );
       if (instant) {
         const prev = el.style.scrollBehavior;
@@ -164,8 +160,34 @@ export function BalafonEpg({
         el.scrollTo({ left: target, behavior: "smooth" });
       }
     },
-    [date, dayStartMin, getScrollEl, layout.sidebarWidth, now, pxPerMinute]
+    [dayStartMin, getScrollEl, layout.sidebarWidth, pxPerMinute]
   );
+
+  const scrollToNow = useCallback(
+    (instant: boolean) => {
+      const el = getScrollEl();
+      if (!el) return;
+      const n = new Date(now);
+      const key = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(
+        n.getDate()
+      ).padStart(2, "0")}`;
+      if (key !== date) {
+        scrollToMinutes(dayStartMin, instant);
+        return;
+      }
+      scrollToMinutes(n.getHours() * 60 + n.getMinutes(), instant);
+    },
+    [date, dayStartMin, getScrollEl, now, scrollToMinutes]
+  );
+
+  /* Expose l'API de scroll aux pages parentes */
+  const api = useMemo<EpgScrollApi>(
+    () => ({ scrollToMinutes: (m) => scrollToMinutes(m), scrollToNow: (i) => scrollToNow(!!i) }),
+    [scrollToMinutes, scrollToNow]
+  );
+  useEffect(() => {
+    onApi?.(api);
+  }, [api, onApi]);
 
   /* Positionnement initial + à chaque changement de jour */
   useEffect(() => {
@@ -194,6 +216,17 @@ export function BalafonEpg({
     },
     [dayStartMin, getScrollEl, layout.sidebarWidth, onDropProgram, pxPerMinute]
   );
+
+  /* Navigation clavier : ← → décalent de 2 heures */
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      onScrollLeft(layout.hourWidth * 2);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      onScrollRight(layout.hourWidth * 2);
+    }
+  };
 
   if (isMobile) {
     return (
@@ -233,6 +266,7 @@ export function BalafonEpg({
               <ChevronRight size={16} />
             </button>
           </div>
+
           <button
             type="button"
             onClick={() => scrollToNow(false)}
@@ -241,6 +275,23 @@ export function BalafonEpg({
             <LocateFixed size={14} aria-hidden />
             Aller à maintenant
           </button>
+
+          {/* Repères horaires — navigation rapide type plateforme de streaming */}
+          {mode === "public" && (
+            <div className="hidden items-center gap-1 md:flex" role="group" aria-label="Aller à une période de la journée">
+              {TIME_MARKERS.map((m) => (
+                <button
+                  key={m.min}
+                  type="button"
+                  onClick={() => scrollToMinutes(m.min)}
+                  className="rounded-md border border-ink-600 bg-ink-800 px-2.5 py-1.5 text-[11px] font-semibold text-mist transition-all hover:border-balafon/60 hover:text-balafon"
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="ml-auto flex items-center gap-3">
             {mode === "admin" && <AdminLegend />}
             <span className="font-mono text-[13px] tabular-nums text-mist" aria-label="Heure actuelle">
@@ -250,10 +301,13 @@ export function BalafonEpg({
         </div>
       )}
 
+      {/* Toile EPG — reste sombre (« moniteur broadcast ») quel que soit le thème */}
       <div
         ref={wrapperRef}
         role="region"
-        aria-label={`Guide des programmes Balafon TV — ${labelDay(date)}`}
+        tabIndex={0}
+        aria-label={`Guide des programmes Balafon TV — ${labelDay(date)}. Flèches gauche et droite pour naviguer.`}
+        onKeyDown={handleKey}
         onDragOver={
           onDropProgram
             ? (e) => {
@@ -265,13 +319,13 @@ export function BalafonEpg({
         }
         onDragLeave={onDropProgram ? () => setDropHover(false) : undefined}
         onDrop={onDropProgram ? handleDrop : undefined}
-        className={`relative overflow-hidden rounded-xl border transition-colors ${
+        className={`epg-surface relative overflow-hidden rounded-xl border transition-colors ${
           dropHover ? "border-balafon/70 shadow-[0_0_0_3px_rgba(227,30,36,0.2)]" : "border-ink-700"
         }`}
         style={{ height: heightPx, background: "#0B0E14" }}
       >
         {width > 0 && (
-          <Epg {...getEpgProps()}>
+          <Epg key={`${date}-${width}`} {...getEpgProps()}>
             <Layout
               {...getLayoutProps()}
               renderProgram={({ program, isBaseTimeFormat }) => (
@@ -319,13 +373,6 @@ export function BalafonEpg({
 
 function hhmm(min: number): string {
   return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
-}
-
-/** "23:00 – 24:00" : une fin à minuit se note 24:00 côté antenne */
-function endLabel(d: PlanbyEpgData): string {
-  const end = d.till.slice(11, 16);
-  const start = d.since.slice(11, 16);
-  return end === "00:00" && start !== "00:00" ? "24:00" : end;
 }
 
 function nextDay(key: string): string {
@@ -377,8 +424,14 @@ function MobileDayList({
   onMissingClick?: (data: PlanbyEpgData) => void;
   onScrollToNow: () => void;
 }) {
+  void date;
+  void now;
   const rows = useMemo(() => {
-    if (mode === "admin") return epg.filter((d) => toMinutes(d.till.slice(11, 16)) > 360 || d.isMissing);
+    if (mode === "admin") {
+      /* Fenêtre admin 06:00→24:00 : tout ce qui démarre à 06:00 ou après,
+         plus les trous (isMissing) — y compris les blocs finissant à minuit. */
+      return epg.filter((d) => toMinutes(d.since.slice(11, 16)) >= 360 || d.isMissing);
+    }
     return epg;
   }, [epg, mode]);
 
@@ -386,9 +439,7 @@ function MobileDayList({
     <div>
       {showControls && (
         <div className="mb-3 flex items-center justify-between gap-2">
-          <span className="flex items-center gap-1.5 text-[12px] font-semibold text-mist">
-            <List size={14} aria-hidden /> Vue liste (mobile)
-          </span>
+          <span className="text-[12px] font-semibold text-mist">Vue liste (mobile)</span>
           <button
             type="button"
             onClick={onScrollToNow}
@@ -400,7 +451,8 @@ function MobileDayList({
       )}
       <ul className="space-y-2">
         {rows.map((d) => {
-          const meta = CATEGORY_META[d.category];
+          const start = d.since.slice(11, 16);
+          const end = d.till.slice(11, 16) === "00:00" && start !== "00:00" ? "24:00" : d.till.slice(11, 16);
           return (
             <li key={d.id}>
               <button
@@ -417,7 +469,7 @@ function MobileDayList({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-[12px] tabular-nums text-mist">
-                    {d.since.slice(11, 16)} – {endLabel(d)}
+                    {start} – {end}
                   </span>
                   {d.isLive && (
                     <span className="live-pulse rounded bg-balafon px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-white">
@@ -429,21 +481,8 @@ function MobileDayList({
                       Programme manquant
                     </span>
                   )}
-                  {d.isRerun && (
-                    <span className="rounded bg-goldwarn/15 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-goldwarn">
-                      Rediffusion
-                    </span>
-                  )}
                 </div>
                 <p className="mt-1 text-[14px] font-bold text-paper">{d.title}</p>
-                {!d.isMissing && (
-                  <p
-                    className="mt-0.5 inline-block rounded px-1.5 py-px text-[10px] font-bold uppercase tracking-wide"
-                    style={{ background: meta?.soft, color: meta?.color }}
-                  >
-                    {meta?.label}
-                  </p>
-                )}
                 {d.isLive && (
                   <div className="mt-2 h-1 overflow-hidden rounded-full bg-ink-600">
                     <div className="h-full bg-balafon" style={{ width: `${Math.round(d.progress)}%` }} />
