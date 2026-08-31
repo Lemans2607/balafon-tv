@@ -47,6 +47,9 @@ export interface EmissionAPI {
   description?: string;
   heure_debut: string; // ISO 8601, renvoyé par DRF
   heure_fin: string; // ISO 8601
+  /** Lien vers l'affiche — lu pour afficher les vignettes dans l'EPG. */
+  image_affiche?: string;
+  fiabilite?: "confirme" | "estime";
 }
 
 export interface GrilleAPI {
@@ -79,6 +82,7 @@ export function depuisApiBackend(
         since: emission.heure_debut,
         till: emission.heure_fin,
         description: emission.description,
+        image: emission.image_affiche,
       });
     }
   }

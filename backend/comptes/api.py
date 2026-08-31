@@ -6,6 +6,7 @@ Endpoints (préfixés /api/auth/ dans urls.py) :
     POST /auth/rafraichir/    { refresh }             → { access }
     POST /auth/deconnexion/   { refresh }             → blacklist du token
     GET  /auth/profil/        utilisateur courant
+    CRUD /auth/comptes/       (admin uniquement)
 """
 from django.contrib.auth import authenticate
 from rest_framework import serializers, status, viewsets
@@ -15,13 +16,26 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import Utilisateur
-from .permissions import EstDirecteurAntenne
 
 
+# ---------------------------------------------------------------- Permissions
+class EstAdmin:
+    """Mixin de permission : administrateur de la plateforme."""
+
+
+def est_admin(user) -> bool:
+    return bool(user and user.is_authenticated and user.est_admin)
+
+
+def est_admin_ou_directeur(user) -> bool:
+    return bool(user and user.is_authenticated and user.peut_gerer_grille)
+
+
+# --------------------------------------------------------------- Serializers
 class UtilisateurSerializer(serializers.ModelSerializer):
-    """Représentation publique d'un compte (sans mot de passe)."""
+    """Représentation publique d'un compte (jamais le mot de passe)."""
 
-    role_display = serializers.CharField(source="get_role_display", read_only=True)
+    role = serializers.CharField(read_only=True)
 
     class Meta:
         model = Utilisateur
@@ -30,13 +44,12 @@ class UtilisateurSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
+            "est_admin",
+            "est_directeur_antenne",
             "role",
-            "role_display",
-            "fonction",
-            "poste_regie",
             "date_joined",
         ]
-        read_only_fields = ["date_joined"]
+        read_only_fields = ["date_joined", "role"]
 
 
 class ConnexionSerializer(serializers.Serializer):
@@ -47,14 +60,15 @@ class ConnexionSerializer(serializers.Serializer):
 
 
 def _jetons_pour(utilisateur: Utilisateur) -> dict:
+    """Paire JWT avec le rôle embarqué (décodage rapide côté frontend)."""
     refresh = RefreshToken.for_user(utilisateur)
-    # Le rôle est embarqué dans le token pour un décodage rapide côté front.
     refresh["role"] = utilisateur.role
     access = refresh.access_token
     access["role"] = utilisateur.role
     return {"access": str(access), "refresh": str(refresh)}
 
 
+# ------------------------------------------------------------------- Actions
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def connexion(request) -> Response:
@@ -105,9 +119,32 @@ def profil(request) -> Response:
     return Response(UtilisateurSerializer(request.user).data)
 
 
+# -------------------------------------------------------------------- CRUD
 class CompteViewSet(viewsets.ModelViewSet):
-    """CRUD des comptes — réservé au Directeur d'Antenne (admin de la plateforme)."""
+    """CRUD des comptes — réservé à l'administrateur de la plateforme."""
 
     queryset = Utilisateur.objects.all().order_by("id")
     serializer_class = UtilisateurSerializer
-    permission_classes = [EstDirecteurAntenne]
+
+    def get_permissions(self):
+        return [IsAuthenticated()]
+
+    def check_admin(self):
+        if not est_admin(self.request.user):
+            self.permission_denied(self.request, message="Réservé aux administrateurs.")
+
+    def create(self, request, *args, **kwargs):
+        self.check_admin()
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        self.check_admin()
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        self.check_admin()
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        self.check_admin()
+        return super().destroy(request, *args, **kwargs)

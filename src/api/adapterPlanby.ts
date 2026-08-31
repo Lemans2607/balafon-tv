@@ -13,12 +13,14 @@ export type { ChainePlanby, ProgrammePlanby };
 
 /** Convertit une Grille DRF en GrilleAPI (format de l'adaptateur canonique). */
 function versGrilleAPI(grille: Grille): GrilleAPI {
+  const chaineObjet = typeof grille.chaine === "object" ? grille.chaine : grille.chaine_detail;
+  const chaineId = typeof grille.chaine === "number" ? grille.chaine : chaineObjet?.id ?? 0;
   return {
     id: grille.id,
     chaine: {
-      id: grille.chaine_detail?.id ?? grille.chaine,
-      slug: grille.chaine_detail?.slug ?? "balafon-tv",
-      nom: grille.chaine_detail?.nom ?? "Balafon TV",
+      id: chaineId,
+      slug: chaineObjet?.slug ?? "balafon-tv",
+      nom: chaineObjet?.nom ?? grille.chaine_nom ?? "Balafon TV",
       logo: undefined,
     },
     emissions: (grille.emissions ?? []).map((e) => ({
@@ -28,6 +30,8 @@ function versGrilleAPI(grille: Grille): GrilleAPI {
       description: e.description,
       heure_debut: e.heure_debut,
       heure_fin: e.heure_fin,
+      image_affiche: e.image_affiche ?? undefined,
+      fiabilite: e.fiabilite,
     })),
   };
 }

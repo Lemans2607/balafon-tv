@@ -1,84 +1,72 @@
 # BALAFON + GUIDE — Backend Django
 
-API REST + WebSocket pour la plateforme EPG de Balafon TV.
+Backend REST du système EPG de Balafon TV. **2 apps** : `comptes` (auth JWT +
+drapeaux de rôle) et `programmation` (chaînes, grilles, émissions).
 
-**Stack** : Django 5 · DRF · Channels (Redis) · PostgreSQL 16 · SimpleJWT · drf-spectacular.
+## Rôles (drapeaux sur `comptes.Utilisateur`)
 
-## Modèle RBAC (2 rôles métier)
+| Drapeau | Rôle métier | Droits |
+|---|---|---|
+| `est_admin` | Administrateur plateforme | CRUD grilles/émissions/chaînes/comptes |
+| `est_directeur_antenne` | Directeur d'Antenne | idem + **validation exclusive** (`POST /grilles/{id}/valider/`) |
+| aucun des deux | Diffuseur (régie) | lecture, futur WebSocket d'alertes (phase 2) |
 
-| Rôle | Droits |
-|---|---|
-| **Directeur d'Antenne** (`directeur_antenne`) | Administrateur de la plateforme : CRUD grilles/émissions, gestion des comptes (`/api/comptes/`), **validation éditoriale exclusive** (`POST /grilles/{id}/valider/`), synchro vMix. |
-| **Diffuseur** (`diffuseur`) | Régie : lecture des grilles, alertes temps réel (WebSocket), acquittement, synchro vMix. |
+Le serializer `/auth/profil/` expose un champ `role` calculé
+(`administrateur` / `directeur_antenne` / `diffuseur`) consommé par le frontend.
 
-Le rôle « administrateur » n'existe plus : le Directeur d'Antenne EST l'admin (cf. rapport de stage).
-Le public non authentifié ne lit que les grilles `statut=validee`.
+## Démarrage (Windows PowerShell, depuis `backend/`)
 
-## Démarrage complet
-
-```bash
-# 1. Dépendances
-python3.12 -m venv venv && source venv/bin/activate
+```powershell
+# 1. Environnement
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+copy .env.example .env        # éditer DB_PASSWORD si besoin
 
-# 2. Variables d'environnement
-cp .env.example .env            # éditer DB_PASSWORD / SECRET_KEY
+# 2. PostgreSQL locale : créer la base
+psql -U postgres -c "CREATE DATABASE balafon_tv;"
 
-# 3. PostgreSQL 16 + Redis 7
-docker compose up -d
-docker ps                       # balafon_guide_db + balafon_guide_redis
+# 3. Vérification + migrations
+python manage.py check
+python manage.py makemigrations comptes
+python manage.py makemigrations programmation
+python manage.py migrate      # « comptes » doit être appliqué avant admin
 
-# 4. Migrations
-python manage.py makemigrations && python manage.py migrate
-python manage.py verifier_bdd   # teste la connexion + liste les tables
-
-# 5. VRAIS comptes métier (remplace createsuperuser, qui ne fixe pas le rôle)
-python manage.py creer_compte \
-    --email direction@balafon.media --motdepasse 'ChangeMoi!2026' \
-    --prenom Martin --nom Essomba --role directeur_antenne --superuser
-
-python manage.py creer_compte \
-    --email regie@balafon.media --motdepasse 'ChangeMoi!2026' \
-    --prenom Rodrigue --nom Talla --role diffuseur --poste 'Poste vMix 1'
-
-# 6. Données de démo (vraies émissions Balafon TV)
-python manage.py charger_emissions_demo
-
-# 7. Serveur ASGI (HTTP + WebSocket)
-daphne -p 8000 balafon_guide.asgi:application
+# 4. Premier compte + données réelles
+python manage.py createsuperuser
+python manage.py charger_emissions_demo     # vraies émissions Balafon TV
+python manage.py runserver
 ```
 
-## Contrat d'API (consommé par le frontend React)
+`charger_emissions_demo` accepte le catalogue hebdomadaire
+(`data/emissions_reelles_balafon_tv.json`) **et** le format contrat (liste
+plate ISO avec `image_affiche`) ; idempotent (`update_or_create`).
 
-| Endpoint | Méthode | Accès |
-|---|---|---|
-| `/api/auth/connexion/` | POST | public — `{ email, mot_de_passe }` → JWT |
-| `/api/auth/rafraichir/` · `/deconnexion/` · `/profil/` | POST/GET | JWT |
-| `/api/comptes/` | CRUD | **Directeur d'Antenne** |
-| `/api/chaines/` | GET | public |
-| `/api/grilles/?statut=validee&chaine=&date=` | GET | public (validées) / staff |
-| `/api/grilles/` | POST/PATCH/DELETE | Directeur d'Antenne |
-| `/api/grilles/{id}/valider/` | POST | **Directeur d'Antenne uniquement** |
-| `/api/grilles/{id}/completude/` · `/api/grilles/en-cours/` | GET | public |
-| `/api/grilles/{id}/emissions/` · `/api/emissions/{id}/` | CRUD | Directeur d'Antenne |
-| `/api/alertes/` · `/api/alertes/{id}/marquer-lue/` | GET/POST | Diffuseur (les siennes) / Direction (toutes) |
-| `/api/vmix/synchroniser/{grille_id}/` | POST | Direction + Diffuseur |
-| `/api/vmix/etat/` | GET | staff |
-| `/api/schema/swagger/` | GET | documentation interactive |
-| `ws://…/ws/alertes/?chaine=balafon-tv&token=<jwt>` | WS | groupes d'alertes par chaîne |
+## Contrat consommé par le frontend
 
-Le frontend bascule automatiquement : si `VITE_API_URL` répond, l'EPG est hydraté depuis
-Django ; sinon il fonctionne en mode démo local (catalogue embarqué + localStorage).
+| URL | Réponse attendue |
+|---|---|
+| `GET /api/chaines/` | `[{"nom": "Balafon TV", "slug": "balafon-tv", ...}]` |
+| `GET /api/grilles/?statut=validee` | grilles avec `chaine` imbriquée, `chaine_nom`, `emissions[]` (ISO), `est_complete` |
+| `GET /api/emissions/` | émissions avec `image_affiche`, `fiabilite` |
+| `GET /api/grilles/{id}/completude/` | `{"complete": bool, "plages_vides": [...]}` |
+| `POST /api/grilles/{id}/valider/` | 200 (directeur) / 403 (autre) |
+| `POST /api/auth/connexion/` | `{access, refresh, utilisateur{role}}` |
+| `POST /api/auth/rafraichir/` | `{access}` |
+| `POST /api/auth/deconnexion/` | blacklist du refresh |
+| `GET /api/auth/profil/` | utilisateur courant |
 
-## vMix
-
-`VMIX_MODE=simule` par défaut : le service journalise les appels sans émettre de requête
-réelle. Passer en `reel` avec l'URL du poste régie (`http://<ip>:8088/api`) après validation
-réseau — chaque synchro est tracée dans `synchro_vmix` (JSONB).
+Frontend : `VITE_API_URL=http://localhost:8000/api` dans `.env.local` —
+l'app bascule automatiquement de la démo locale vers l'API (hydratation des
+grilles, affiches via `image_affiche`).
 
 ## Tests
 
-```bash
-pytest                          # transition de statut, restriction valider/,
-                                # alerte post-validation, filtrage public
+```powershell
+pytest            # backend/tests — validation, rôles, filtrage, chevauchement, complétude
 ```
+
+## Phase 2 (non incluse)
+
+Django Channels + Redis : `ws/alertes/` poussera les alertes de modification
+des grilles validées vers la régie (groupe par chaîne).

@@ -3,8 +3,8 @@
    Cohérents avec backend/programmation/models.py, comptes, alertes.
    ============================================================ */
 
-/** Rôles métier backend — le Directeur d'Antenne est l'admin de la plateforme. */
-export type RoleBackend = "directeur_antenne" | "diffuseur";
+/** Rôles métier calculés par le backend (drapeaux est_admin / est_directeur_antenne). */
+export type RoleBackend = "administrateur" | "directeur_antenne" | "diffuseur";
 
 export type StatutGrille = "brouillon" | "en_validation" | "validee";
 
@@ -26,10 +26,11 @@ export interface Utilisateur {
   email: string;
   first_name: string;
   last_name: string;
+  /** Drapeaux backend (source de vérité) */
+  est_admin?: boolean;
+  est_directeur_antenne?: boolean;
+  /** Rôle calculé par le backend : administrateur / directeur_antenne / diffuseur */
   role: RoleBackend;
-  role_display: string;
-  fonction?: string;
-  poste_regie?: string;
   date_joined?: string;
 }
 
@@ -50,12 +51,17 @@ export interface Emission {
   /** ISO 8601 renvoyé par DRF */
   heure_debut: string;
   heure_fin: string;
+  /** Lien vers l'affiche affichée sur le frontend (vignettes EPG). */
+  image_affiche?: string | null;
+  fiabilite?: "confirme" | "estime";
 }
 
 export interface Grille {
   id: number;
-  chaine: number;
+  /** Le backend imbrique la chaîne (objet) ; un id est toléré en repli. */
+  chaine: Chaine | number;
   chaine_detail?: Chaine;
+  chaine_nom?: string;
   date_debut: string;
   date_fin: string;
   statut: StatutGrille;
@@ -65,6 +71,7 @@ export interface Grille {
   cree_par?: number | null;
   cree_par_nom?: string;
   valide_par?: number | null;
+  est_complete?: boolean;
   emissions?: Emission[];
 }
 
