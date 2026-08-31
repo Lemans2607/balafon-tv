@@ -8,7 +8,6 @@ import { PublicNavbar } from "./components/layout/PublicNavbar";
 import { PublicFooter } from "./components/layout/PublicFooter";
 import { StaffShell } from "./components/layout/StaffShell";
 import { PublicHome } from "./pages/public/PublicHome";
-import { DemoPage } from "./pages/DemoPage";
 import { ToastHost } from "./components/ui";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
@@ -205,11 +204,12 @@ function Root() {
     el.style.colorScheme = theme;
   }, [theme]);
 
-  /* Garde-fou : un rôle obsolète persisté (ex. ancien "admin") revient sur un rôle valide. */
+  /* Garde-fou : tout rôle obsolète persisté (anciens "public" / "admin")
+     bascule sur la Direction d'Antenne — le super admin du site. */
   useEffect(() => {
     const app = useAppStore.getState();
-    if (app.role !== "public" && app.role !== "directeur" && app.role !== "regie") {
-      app.setRole("public");
+    if (app.role !== "directeur" && app.role !== "regie") {
+      app.setRole("directeur");
     }
   }, []);
 
@@ -265,7 +265,6 @@ function Root() {
     <HashRouter>
       <Routes>
         <Route index element={<Navigate to="/tv" replace />} />
-        <Route path="/demo" element={page("Démo", <DemoPage />)} />
         <Route path="/login" element={page("Connexion", <LoginPage />)} />
         <Route path="/tv/*" element={<PublicShell />} />
         <Route

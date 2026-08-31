@@ -99,8 +99,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   }, [utilisateur, roleDemo]);
 
-  /* En mode démo, tout le monde est "authentifié" par le sélecteur de rôle ;
-     en mode API, il faut un utilisateur connecté. */
+  /* Un utilisateur JWT réel pilote le rôle de l'espace Studio :
+     administrateur / directeur_antenne → Direction, diffuseur → Régie.
+     (Sans backend, le Directeur d'Antenne est le compte initial du site.) */
+  useEffect(() => {
+    if (!utilisateur?.role) return;
+    const cible = utilisateur.role === "diffuseur" ? "regie" : "directeur";
+    if (useAppStore.getState().role !== cible) useAppStore.getState().setRole(cible);
+  }, [utilisateur]);
+
+  /* En mode API, il faut un utilisateur connecté ; sinon la Direction est le
+     compte initial du site (super admin déjà créé). */
   const estAuthentifie = modeApi ? utilisateur !== null : roleDemo !== "public";
 
   const valeur = useMemo(
