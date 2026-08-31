@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="BALAFON + GUIDE — Portail TV et régie de programmation de Balafon TV (Balafon Media Group, Cameroun). EPG, direct, replay et back-office Studio." />
+    <title>BALAFON + GUIDE — Balafon TV</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo:wght@500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      html, body { margin: 0; padding: 0; background-color: #050505; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      /* ============================================================
+         Filet de sécurité ANTI-ÉCRAN-NOIR (exécuté avant les modules)
+         1. Piège toute erreur JavaScript globale (y compris pendant
+            l'évaluation des modules) et affiche un panneau lisible.
+         2. Si rien n'est monté après 6 s, affiche un diagnostic.
+         ============================================================ */
+      (function () {
+        function panneau(titre, detail, accent) {
+          var r = document.getElementById("root");
+          if (!r || r.childElementCount > 0) return;
+          var couleur = accent || "239,68,68";
+          r.innerHTML =
+            '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#050505;padding:24px;font-family:system-ui,sans-serif">' +
+            '<div style="max-width:560px;width:100%;border:1px solid rgba(' + couleur + ',0.45);background:#111622;border-radius:16px;padding:28px;color:#F7F8FA">' +
+            '<p style="margin:0;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#9CA3AF">Balafon + Guide</p>' +
+            '<h1 style="margin:8px 0 12px;font-size:20px">' + titre + "</h1>" +
+            '<pre style="margin:0 0 14px;padding:14px;border-radius:10px;background:#0B0E14;border:1px solid #2A3142;color:rgb(' + couleur + ');font-size:12px;line-height:1.55;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow:auto">' + detail + "</pre>" +
+            '<p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#9CA3AF">Ouvrez la console (F12) pour le détail complet.</p>' +
+            '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+            '<button onclick="try{Object.keys(localStorage).filter(function(k){return k.indexOf(&#39;balafon-&#39;)===0}).forEach(function(k){localStorage.removeItem(k)})}catch(e){};window.location.reload()" style="border:none;border-radius:10px;background:#FF3D00;color:#fff;font-weight:700;padding:10px 16px;cursor:pointer">Réinitialiser les données locales</button>' +
+            '<button onclick="window.location.reload()" style="border:1px solid #2A3142;border-radius:10px;background:#1A1F2E;color:#F7F8FA;font-weight:700;padding:10px 16px;cursor:pointer">Recharger</button>' +
+            "</div></div></div>";
+        }
+        window.__balafonPanneau = panneau;
+        window.addEventListener("error", function (e) {
+          var msg = (e && e.message) || "Erreur inconnue";
+          var ou = "";
+          if (e && e.filename) ou = "\n" + e.filename + ":" + (e.lineno || "?");
+          console.error("[BALAFON + GUIDE] Erreur globale :", (e && e.error) || msg);
+          panneau("Erreur JavaScript au démarrage", msg + ou);
+        });
+        window.addEventListener("unhandledrejection", function (e) {
+          console.error("[BALAFON + GUIDE] Promesse rejetée :", e.reason);
+        });
+        window.addEventListener("load", function () {
+          window.setTimeout(function () {
+            var r = document.getElementById("root");
+            if (r && r.childElementCount === 0) {
+              panneau(
+                "L\u2019application n\u2019a pas démarré",
+                "Aucun rendu produit après 6 secondes : script non chargé, bloqué par le navigateur, ou erreur JavaScript. Vérifiez la console (F12) puis rechargez.",
+                "255,184,0"
+              );
+            }
+          }, 6000);
+        });
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

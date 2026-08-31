@@ -1,0 +1,34 @@
+# BALAFON + GUIDE — PostgreSQL + Redis en local
+#   docker compose up -d
+#   docker ps  → balafon_guide_db + balafon_guide_redis
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: balafon_guide_db
+    environment:
+      POSTGRES_DB: balafon_guide
+      POSTGRES_USER: balafon_admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-balafon_dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U balafon_admin -d balafon_guide"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: balafon_guide_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

@@ -1,0 +1,349 @@
+import { useMemo, useState } from "react";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { motion } from "framer-motion";
+import { Lock, Mail, ShieldCheck, Trash2, UserCog, UserPlus, UserX } from "lucide-react";
+import type { z } from "zod";
+
+import { useAppStore } from "../../store/appStore";
+import { useScheduleStore } from "../../store/scheduleStore";
+import { Badge, Button, EmptyState, Modal } from "../../components/ui";
+import { schemaUtilisateur } from "../../utils/validators";
+import type { UserRole } from "../../types";
+
+/* ============================================================
+   COMPTES & ÉQUIPE — gérés par le Directeur d'Antenne.
+   Persistés localement ; prêts à brancher sur GET/POST /api/comptes/
+   (CompteViewSet Django, réservé aux administrateurs).
+   ============================================================ */
+
+interface Compte {
+  id: string;
+  nom: string;
+  email: string;
+  role: UserRole;
+  fonction: string;
+  actif: boolean;
+}
+
+const COMPTES_INITIAUX: Compte[] = [
+  { id: "c-1", nom: "Martin Essomba", email: "m.essomba@balafon.media", role: "directeur", fonction: "Directeur d’Antenne", actif: true },
+  { id: "c-2", nom: "Sandra Kamga", email: "s.kamga@balafon.media", role: "admin", fonction: "Administratrice Antenne", actif: true },
+  { id: "c-3", nom: "Rodrigue Talla", email: "r.talla@balafon.media", role: "regie", fonction: "Opérateur régie — poste vMix 1", actif: true },
+  { id: "c-4", nom: "Clarisse Nkeng", email: "c.nkeng@balafon.media", role: "regie", fonction: "Opératrice régie — nuit", actif: false },
+];
+
+const ROLE_META: Record<UserRole, { label: string; color: string; soft: string }> = {
+  directeur: { label: "Direction d’Antenne", color: "#E31E24", soft: "rgba(227,30,36,0.14)" },
+  admin: { label: "Admin Antenne", color: "#0F6BD6", soft: "rgba(15,107,214,0.16)" },
+  regie: { label: "Régie · Diffuseur", color: "#00F5A0", soft: "rgba(0,245,160,0.12)" },
+};
+
+interface ComptesState {
+  comptes: Compte[];
+  /** Retourne false si la règle « un seul Admin Antenne » est violée. */
+  ajouter: (c: Omit<Compte, "id">) => boolean;
+  modifier: (id: string, patch: Partial<Compte>) => void;
+  supprimer: (id: string) => void;
+}
+
+/* ============================================================
+   RÈGLE DE SÉCURITÉ : il existe UN SEUL compte Admin Antenne
+   (compte système). En créer ou en supprimer un second est
+   interdit côté UI ET côté store (défense en profondeur) —
+   idem côté Django (contrainte applicative dans comptes/models.py).
+   ============================================================ */
+
+const useComptes = create<ComptesState>()(
+  persist(
+    (set, get) => ({
+      comptes: COMPTES_INITIAUX,
+      ajouter: (c) => {
+        if (c.role === "admin") return false; // faille bloquée
+        set({ comptes: [...get().comptes, { ...c, id: `c-${Date.now()}` }] });
+        return true;
+      },
+      modifier: (id, patch) =>
+        set({
+          comptes: get().comptes.map((x) =>
+            /* le compte système ne peut jamais devenir/cesser d'être admin */
+            x.id === id ? { ...x, ...(x.role === "admin" ? { ...patch, role: "admin" as const } : patch) } : x
+          ),
+        }),
+      supprimer: (id) => {
+        const cible = get().comptes.find((x) => x.id === id);
+        if (cible?.role === "admin") return; // compte système protégé
+        set({ comptes: get().comptes.filter((x) => x.id !== id) });
+      },
+    }),
+    { name: "balafon-comptes-v1" }
+  )
+);
+
+export function ComptesPage() {
+  const roleActif = useAppStore((s) => s.role);
+  const toast = useAppStore((s) => s.toast);
+  const addLog = useScheduleStore((s) => s.addLog);
+  const { comptes, ajouter, modifier, supprimer } = useComptes();
+
+  const [filtre, setFiltre] = useState<"all" | UserRole>("all");
+  const [modal, setModal] = useState<{ ouvert: boolean; edition?: Compte }>({ ouvert: false });
+  const [suppression, setSuppression] = useState<Compte | null>(null);
+
+  /* Formulaire */
+  const [nom, setNom] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<UserRole>("regie");
+  const [fonction, setFonction] = useState("");
+  const [erreurs, setErreurs] = useState<Record<string, string>>({});
+
+  const visibles = useMemo(
+    () => comptes.filter((c) => filtre === "all" || c.role === filtre),
+    [comptes, filtre]
+  );
+
+  const ouvrirCreation = () => {
+    setNom(""); setEmail(""); setRole("regie"); setFonction(""); setErreurs({});
+    setModal({ ouvert: true });
+  };
+  const ouvrirEdition = (c: Compte) => {
+    setNom(c.nom); setEmail(c.email); setRole(c.role); setFonction(c.fonction); setErreurs({});
+    setModal({ ouvert: true, edition: c });
+  };
+
+  const enregistrer = () => {
+    const res = schemaUtilisateur.safeParse({ nom, email, role, fonction });
+    if (!res.success) {
+      const champs: Record<string, string> = {};
+      res.error.issues.forEach((issue: z.ZodIssue) => {
+        champs[String(issue.path[0])] = issue.message;
+      });
+      setErreurs(champs);
+      return;
+    }
+    if (role === "admin") {
+      /* Défense en profondeur : même si l'UI ne le propose plus, on refuse. */
+      setErreurs({ role: "Sécurité : il ne peut exister qu’un seul compte Admin Antenne." });
+      return;
+    }
+    if (modal.edition) {
+      modifier(modal.edition.id, { nom, email, role, fonction });
+      toast({ title: "Compte mis à jour", message: `${nom} — ${ROLE_META[role].label}.`, tone: "success" });
+      addLog({ user: "Direction d’Antenne", role: "directeur", action: "Modification de compte", details: `Compte de ${nom} (${email}) mis à jour.`, severity: "info" });
+    } else {
+      const ok = ajouter({ nom, email, role, fonction, actif: true });
+      if (!ok) {
+        setErreurs({ role: "Sécurité : il ne peut exister qu’un seul compte Admin Antenne." });
+        return;
+      }
+      toast({ title: "Compte créé", message: `${nom} rejoint l’équipe en tant que ${ROLE_META[role].label}.`, tone: "success" });
+      addLog({ user: "Direction d’Antenne", role: "directeur", action: "Création de compte", details: `Compte de ${nom} (${email}) créé — rôle ${ROLE_META[role].label}.`, severity: "info" });
+    }
+    setModal({ ouvert: false });
+  };
+
+  const basculerActif = (c: Compte) => {
+    modifier(c.id, { actif: !c.actif });
+    toast({
+      title: c.actif ? "Compte désactivé" : "Compte réactivé",
+      message: `${c.nom} ${c.actif ? "ne peut plus se connecter" : "peut de nouveau se connecter"}.`,
+      tone: c.actif ? "warning" : "success",
+    });
+    addLog({ user: "Direction d’Antenne", role: "directeur", action: c.actif ? "Désactivation de compte" : "Réactivation de compte", details: `Compte de ${c.nom} (${c.email}).`, severity: "warning" });
+  };
+
+  const confirmerSuppression = () => {
+    if (!suppression) return;
+    supprimer(suppression.id);
+    toast({ title: "Compte supprimé", message: `${suppression.nom} a été retiré de l’équipe.`, tone: "warning" });
+    addLog({ user: "Direction d’Antenne", role: "directeur", action: "Suppression de compte", details: `Compte de ${suppression.nom} (${suppression.email}) supprimé.`, severity: "critical" });
+    setSuppression(null);
+  };
+
+  const estDirecteur = roleActif === "directeur";
+
+  return (
+    <div className="mx-auto max-w-5xl space-y-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex overflow-hidden rounded-lg border border-ink-600">
+          {([
+            { id: "all", label: "Toute l’équipe" },
+            { id: "directeur", label: "Direction" },
+            { id: "admin", label: "Admin" },
+            { id: "regie", label: "Régie" },
+          ] as const).map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              aria-pressed={filtre === f.id}
+              onClick={() => setFiltre(f.id)}
+              className={`px-4 py-2 text-[12.5px] font-extrabold transition-colors ${
+                filtre === f.id ? "bg-balafon/15 text-balafon" : "bg-ink-800 text-mist hover:text-paper"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        {estDirecteur && (
+          <Button className="ml-auto" onClick={ouvrirCreation}>
+            <UserPlus size={14} aria-hidden /> Nouveau compte
+          </Button>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="flex items-center gap-2 text-[12px] text-mist-dark">
+          <ShieldCheck size={13} className="text-balafon" aria-hidden />
+          La gestion des comptes relève de la Direction d’Antenne. En production, ces données vivent dans
+          <span className="font-mono text-mist">/api/comptes/</span> (Django, rôle administrateur requis).
+        </p>
+        <p className="flex items-start gap-2 rounded-lg border border-ocean/35 bg-ocean/10 px-3 py-2.5 text-[12px] font-semibold leading-relaxed text-ocean-soft">
+          <Lock size={13} className="mt-0.5 shrink-0" aria-hidden />
+          <span>
+            Règle de sécurité : <strong className="text-paper">un seul compte Admin Antenne</strong> est autorisé
+            (compte système). Il ne peut être ni dupliqué, ni modifié, ni supprimé — côté interface comme côté base
+            de données. Les nouveaux comptes sont créés en <strong className="text-paper">Direction d’Antenne</strong>{" "}
+            ou <strong className="text-paper">Régie</strong>.
+          </span>
+        </p>
+      </div>
+
+      {visibles.length === 0 ? (
+        <EmptyState icon={<UserCog size={32} />} title="Aucun compte" hint="Créez le premier compte de l’équipe." />
+      ) : (
+        <ul className="space-y-3">
+          {visibles.map((c, i) => {
+            const meta = ROLE_META[c.role];
+            const estSysteme = c.role === "admin";
+            const initiales = c.nom.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+            return (
+              <motion.li
+                key={c.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className={`flex flex-wrap items-center gap-4 rounded-xl border p-4 transition-opacity ${
+                  estSysteme ? "border-ocean/40 bg-ocean/[0.06]" : "border-ink-700 bg-ink-800/70"
+                } ${c.actif ? "" : "opacity-55"}`}
+              >
+                <span
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[13px] font-extrabold"
+                  style={{ background: meta.soft, color: meta.color }}
+                  aria-hidden
+                >
+                  {initiales}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-2 text-[14.5px] font-extrabold text-paper">
+                    {c.nom}
+                    {estSysteme && (
+                      <span
+                        className="flex items-center gap-1 rounded bg-ocean/20 px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-ocean-soft"
+                        title="Compte système : un seul Admin Antenne est autorisé — protégé contre toute modification."
+                      >
+                        <Lock size={9} aria-hidden /> Compte système · unique
+                      </span>
+                    )}
+                    {!c.actif && (
+                      <span className="flex items-center gap-1 rounded bg-ink-700 px-1.5 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider text-mist">
+                        <UserX size={9} aria-hidden /> Désactivé
+                      </span>
+                    )}
+                  </p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-[12px] text-mist-dark">
+                    <Mail size={11} aria-hidden /> {c.email}
+                    {c.fonction && <span aria-hidden>·</span>}
+                    <span className="truncate">{c.fonction}</span>
+                  </p>
+                </div>
+                <Badge color={meta.color} soft={meta.soft}>{meta.label}</Badge>
+                {estDirecteur && !estSysteme && (
+                  <div className="flex items-center gap-1.5">
+                    <Button size="sm" variant="outline" onClick={() => basculerActif(c)}>
+                      {c.actif ? "Désactiver" : "Réactiver"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => ouvrirEdition(c)}>Modifier</Button>
+                    <button
+                      type="button"
+                      onClick={() => setSuppression(c)}
+                      aria-label={`Supprimer le compte de ${c.nom}`}
+                      className="rounded-lg p-2 text-mist transition-colors hover:bg-crit/15 hover:text-crit"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                )}
+                {estSysteme && (
+                  <span className="flex items-center gap-1.5 text-[11px] font-bold text-mist-dark" title="Protégé : création, modification et suppression interdites.">
+                    <Lock size={12} aria-hidden /> Protégé
+                  </span>
+                )}
+              </motion.li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* ---------------- Modale création / édition ---------------- */}
+      <Modal
+        open={modal.ouvert}
+        onClose={() => setModal({ ouvert: false })}
+        title={modal.edition ? `Modifier ${modal.edition.nom}` : "Nouveau compte"}
+        width="max-w-lg"
+      >
+        <div className="space-y-4">
+          <ChampForm label="Nom complet" erreur={erreurs.nom}>
+            <input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Ex. : Aïcha Mbarga" className="input-balafon" />
+          </ChampForm>
+          <ChampForm label="Email professionnel" erreur={erreurs.email}>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="prenom.nom@balafon.media" className="input-balafon" />
+          </ChampForm>
+          <ChampForm label="Rôle" erreur={erreurs.role}>
+            <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="input-balafon">
+              {(Object.keys(ROLE_META) as UserRole[]).map((r) => (
+                <option key={r} value={r}>{ROLE_META[r].label}</option>
+              ))}
+            </select>
+          </ChampForm>
+          <ChampForm label="Fonction / poste" erreur={erreurs.fonction}>
+            <input value={fonction} onChange={(e) => setFonction(e.target.value)} placeholder="Ex. : Opérateur régie — poste vMix 2" className="input-balafon" />
+          </ChampForm>
+          <p className="rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-[11.5px] leading-relaxed text-mist-dark">
+            {role === "directeur"
+              ? "Le Directeur d’Antenne gère les comptes ET les grilles, et détient le droit exclusif de validation."
+              : role === "admin"
+              ? "L’Admin Antenne construit les grilles et gère la bibliothèque, sans droit de validation."
+              : "La Régie consulte la grille en lecture seule, acquitte les alertes et synchronise vMix."}
+          </p>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="ghost" onClick={() => setModal({ ouvert: false })}>Annuler</Button>
+            <Button onClick={enregistrer}>{modal.edition ? "Enregistrer" : "Créer le compte"}</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ---------------- Confirmation suppression ---------------- */}
+      <Modal open={suppression !== null} onClose={() => setSuppression(null)} title="Supprimer ce compte ?" tone="critical">
+        <p className="text-[13.5px] leading-relaxed text-mist">
+          <strong className="text-paper">{suppression?.nom}</strong> ({suppression?.email}) perdra immédiatement
+          l’accès à Balafon Studio. Cette action est tracée dans le journal d’audit.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setSuppression(null)}>Annuler</Button>
+          <Button variant="danger" onClick={confirmerSuppression}>Supprimer définitivement</Button>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+function ChampForm({ label, erreur, children }: { label: string; erreur?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-widest text-mist">{label}</label>
+      {children}
+      {erreur && <p role="alert" className="mt-1 text-[11.5px] font-semibold text-crit">{erreur}</p>}
+    </div>
+  );
+}

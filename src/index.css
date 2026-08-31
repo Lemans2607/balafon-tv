@@ -1,0 +1,302 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-950: #07080c;
+  --color-ink-900: #0b0e15;
+  --color-ink-850: #0f1320;
+  --color-ink-800: #121724;
+  --color-ink-700: #1b2130;
+  --color-ink-600: #2b3345;
+  --color-ink-500: #3c455c;
+
+  /* ----- Charte Balafon Media Corporation : Rouge · Bleu · Blanc · Noir ----- */
+  --color-balafon: #e31e24;
+  --color-balafon-deep: #b31217;
+  --color-balafon-soft: #ff5a55;
+  --color-ocean: #0f6bd6;
+  --color-ocean-soft: #5ea2f2;
+  --color-studio: #00f5a0;
+  --color-goldwarn: #ffb800;
+  --color-crit: #ef4444;
+  --color-sysblue: #3b82f6;
+  --color-paper: #f7f8fa;
+  --color-mist: #a3abbb;
+  --color-mist-dark: #6d7688;
+
+  --font-display: "Bebas Neue", "Archivo", "Manrope", sans-serif;
+  --font-body: "Manrope", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+}
+
+html {
+  scrollbar-color: #2a3142 #0b0e14;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-ink-950);
+  color: var(--color-paper);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ---------- Thème clair (Balafon Plus) ----------
+   Seules les neutres basculent ; le rouge #E31E24 et le bleu
+   #0F6BD6 de la marque restent identiques. */
+.theme-light {
+  --color-ink-950: #eceef3;
+  --color-ink-900: #f6f7f9;
+  --color-ink-850: #ffffff;
+  --color-ink-800: #ffffff;
+  --color-ink-700: #e2e5ec;
+  --color-ink-600: #d2d7e1;
+  --color-ink-500: #bdc4d2;
+  --color-paper: #131822;
+  --color-mist: #556072;
+  --color-mist-dark: #8b94a5;
+  color-scheme: light;
+}
+.theme-light ::-webkit-scrollbar-track { background: #f6f7f9; }
+.theme-light ::-webkit-scrollbar-thumb { background: #d2d7e1; }
+
+/* Sélection aux couleurs de la marque */
+::selection {
+  background: rgba(227, 30, 36, 0.85);
+  color: #ffffff;
+}
+
+/* Toile EPG — reste un « moniteur broadcast » sombre même en thème clair,
+   pour garantir la lisibilité de la grille horaire. */
+.epg-surface {
+  --color-ink-950: #07080c;
+  --color-ink-900: #0b0e15;
+  --color-ink-850: #0f1320;
+  --color-ink-800: #121724;
+  --color-ink-700: #1b2130;
+  --color-ink-600: #2b3345;
+  --color-ink-500: #3c455c;
+  --color-paper: #f7f8fa;
+  --color-mist: #a3abbb;
+  --color-mist-dark: #6d7688;
+  color-scheme: dark;
+}
+
+/* Liseré tricolore signature Balafon (rouge · blanc · bleu) */
+.brand-rule {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #e31e24 0%,
+    #e31e24 33%,
+    #f7f8fa 33%,
+    #f7f8fa 50%,
+    #0f6bd6 50%,
+    #0f6bd6 100%
+  );
+}
+
+/* ---------- Focus visible (WCAG) ---------- */
+:focus-visible {
+  outline: 2px solid #e31e24;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- Scrollbars sombres ---------- */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: #0b0e14; }
+*::-webkit-scrollbar-thumb { background: #2a3142; border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: #3a4256; }
+*::-webkit-scrollbar-corner { background: #0b0e14; }
+
+/* ---------- Zone hachurée (trous de grille) ---------- */
+.hatch-red {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(239, 68, 68, 0.28) 0px,
+    rgba(239, 68, 68, 0.28) 6px,
+    rgba(239, 68, 68, 0.08) 6px,
+    rgba(239, 68, 68, 0.08) 12px
+  );
+}
+.hatch-gold {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 184, 0, 0.18) 0px,
+    rgba(255, 184, 0, 0.18) 6px,
+    rgba(255, 184, 0, 0.05) 6px,
+    rgba(255, 184, 0, 0.05) 12px
+  );
+}
+
+/* ---------- Texture ambiante ---------- */
+.bg-grid-faint {
+  background-image:
+    linear-gradient(rgba(156, 163, 175, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(156, 163, 175, 0.045) 1px, transparent 1px);
+  background-size: 42px 42px;
+}
+.bg-noise-red {
+  background-image: radial-gradient(ellipse 80% 55% at 72% -10%, rgba(227, 30, 36, 0.16), transparent 60%),
+    radial-gradient(ellipse 60% 45% at 8% 108%, rgba(15, 107, 214, 0.08), transparent 60%);
+}
+
+/* ---------- Pulsation Live (rouge Balafon) ---------- */
+@keyframes livePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(227, 30, 36, 0.55); }
+  55% { box-shadow: 0 0 0 7px rgba(227, 30, 36, 0); }
+}
+.live-pulse { animation: livePulse 1.8s ease-out infinite; }
+
+@keyframes softBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.soft-blink { animation: softBlink 1.6s ease-in-out infinite; }
+
+@keyframes eq1 { 0%,100%{height:30%} 50%{height:95%} }
+@keyframes eq2 { 0%,100%{height:80%} 50%{height:25%} }
+@keyframes eq3 { 0%,100%{height:50%} 50%{height:100%} }
+.eq-bar1 { animation: eq1 0.9s ease-in-out infinite; }
+.eq-bar2 { animation: eq2 1.1s ease-in-out infinite; }
+.eq-bar3 { animation: eq3 0.75s ease-in-out infinite; }
+
+/* ---------- Planby : harmonisation du moteur ---------- */
+.planby {
+  font-family: var(--font-body) !important;
+}
+.planby [data-testid="container"] {
+  border-radius: 12px;
+}
+
+/* ---------- Utilitaires typo ---------- */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.015em;
+}
+.tracking-tightest { letter-spacing: 0.01em; }
+
+/* ---------- Surfaces premium (style shadcn) ---------- */
+.panel {
+  position: relative;
+  border-radius: 14px;
+  border: 1px solid #1e2536;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0) 42%), #10151f;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    0 14px 34px rgba(2, 4, 9, 0.5);
+}
+.theme-light .panel {
+  border-color: #dde2ec;
+  background: linear-gradient(180deg, #ffffff, #f6f8fb);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+/* Reflet qui balaie la carte au survol */
+.sheen { position: relative; overflow: hidden; }
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.07) 50%, transparent 60%);
+  transform: translateX(-120%);
+  transition: transform 0.7s ease;
+  pointer-events: none;
+}
+.sheen:hover::after { transform: translateX(120%); }
+
+/* ---------- Ticker d'antenne (bandeau défilant) ---------- */
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: tickerScroll 46s linear infinite;
+}
+.ticker-track:hover { animation-play-state: paused; }
+
+/* Léger zoom lent sur les fonds hero */
+@keyframes kenburns {
+  0% { transform: scale(1.02) translate3d(0, 0, 0); }
+  50% { transform: scale(1.08) translate3d(1.2%, -1.2%, 0); }
+  100% { transform: scale(1.02) translate3d(0, 0, 0); }
+}
+.kenburns { animation: kenburns 26s ease-in-out infinite; }
+
+/* Gros numéros éditoriaux façon Canal+ (contour rouge Balafon, rempli au survol) */
+.num-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(227, 30, 36, 0.5);
+  transition: color 0.25s ease, -webkit-text-stroke-color 0.25s ease;
+}
+.group:hover .num-outline,
+.num-outline:hover {
+  color: rgba(227, 30, 36, 0.9);
+  -webkit-text-stroke-color: rgba(227, 30, 36, 0.9);
+}
+
+/* ---------- Halos ambiants (fond vivant, jamais plat) ---------- */
+.glow-balafon {
+  background:
+    radial-gradient(ellipse 55% 42% at 82% -6%, rgba(227, 30, 36, 0.15), transparent 62%),
+    radial-gradient(ellipse 42% 36% at 4% 104%, rgba(15, 107, 214, 0.12), transparent 60%);
+}
+.glow-ocean {
+  background:
+    radial-gradient(ellipse 50% 40% at 12% -8%, rgba(15, 107, 214, 0.15), transparent 60%),
+    radial-gradient(ellipse 46% 38% at 96% 102%, rgba(227, 30, 36, 0.09), transparent 62%);
+}
+
+/* Grain très léger pour casser les aplats */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+}
+
+/* Champ de formulaire Studio */
+.input-balafon {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #2b3345;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.62rem 0.9rem;
+  font-size: 13.5px;
+  color: #f7f8fa;
+  transition: border-color 0.2s ease;
+}
+.input-balafon::placeholder { color: #6d7688; }
+.input-balafon:focus {
+  outline: none;
+  border-color: rgba(227, 30, 36, 0.7);
+}
+select.input-balafon option { background: #121724; }
+
+/* Ligne de balayage broadcast (hero) */
+@keyframes scanline {
+  0% { transform: translateY(-120%); }
+  100% { transform: translateY(1200%); }
+}
+.scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 90px;
+  background: linear-gradient(to bottom, transparent, rgba(227, 30, 36, 0.05), transparent);
+  animation: scanline 9s linear infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-pulse, .soft-blink, .eq-bar1, .eq-bar2, .eq-bar3 { animation: none; }
+  * { scroll-behavior: auto !important; }
+}
