@@ -149,11 +149,12 @@ export const useScheduleStore = create<ScheduleState>()(
                   5,
                   Math.round((fin.getTime() - debut.getTime()) / 60000)
                 ),
-                posterUrl: "",
+                /* Affiche fournie par le backend (image_affiche) — repli local sinon. */
+                posterUrl: emission.image_affiche ?? "",
                 status: "validated",
                 isReplayAvailable: false,
                 tags: [emission.genre],
-                fiabilite: "confirme",
+                fiabilite: emission.fiabilite ?? "confirme",
               };
               parTitre.set(titre.toLowerCase(), program);
               programsBase.push(program);
@@ -372,7 +373,7 @@ export const useScheduleStore = create<ScheduleState>()(
       },
     }),
     {
-      name: "balafon-schedule-v2",
+      name: "balafon-schedule-v3",
       partialize: (s) => ({
         programs: s.programs,
         scheduleMap: s.scheduleMap,

@@ -15,21 +15,70 @@
     />
     <style>
       html, body { margin: 0; padding: 0; background-color: #050505; }
+      #root { min-height: 100vh; }
+
+      /* ------ Écran de démarrage Balafon (remplacé par React au montage) ------ */
+      #balafon-boot {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        background:
+          radial-gradient(ellipse 60% 45% at 78% -8%, rgba(227, 30, 36, 0.14), transparent 60%),
+          radial-gradient(ellipse 50% 40% at 6% 108%, rgba(15, 107, 214, 0.12), transparent 60%),
+          #050505;
+        font-family: "Archivo", system-ui, sans-serif;
+      }
+      #balafon-boot .eq { display: flex; align-items: flex-end; gap: 6px; height: 44px; }
+      #balafon-boot .eq span {
+        width: 9px; border-radius: 4px 4px 0 0; background: #E31E24;
+        animation: boot-eq 1s ease-in-out infinite;
+      }
+      #balafon-boot .eq span:nth-child(1) { height: 40%; animation-delay: 0s; }
+      #balafon-boot .eq span:nth-child(2) { height: 85%; animation-delay: .12s; background: #0F6BD6; }
+      #balafon-boot .eq span:nth-child(3) { height: 55%; animation-delay: .24s; }
+      #balafon-boot .eq span:nth-child(4) { height: 95%; animation-delay: .36s; background: #0F6BD6; }
+      #balafon-boot .eq span:nth-child(5) { height: 45%; animation-delay: .48s; }
+      @keyframes boot-eq { 0%,100% { transform: scaleY(.45); } 50% { transform: scaleY(1); } }
+      #balafon-boot .marque {
+        font-family: "Bebas Neue", "Archivo", sans-serif;
+        font-size: 34px; letter-spacing: .06em; color: #F7F8FA; text-transform: uppercase;
+      }
+      #balafon-boot .marque b { color: #E31E24; font-weight: 400; }
+      #balafon-boot .etat {
+        font-family: "JetBrains Mono", monospace; font-size: 10.5px;
+        letter-spacing: .24em; text-transform: uppercase; color: #6B7280;
+      }
+      #balafon-boot .barre {
+        width: 190px; height: 3px; border-radius: 3px; background: #1A1F2E; overflow: hidden;
+      }
+      #balafon-boot .barre i {
+        display: block; height: 100%; width: 40%; border-radius: 3px; background: #E31E24;
+        animation: boot-slide 1.3s ease-in-out infinite;
+      }
+      @keyframes boot-slide { 0% { transform: translateX(-110%); } 100% { transform: translateX(300%); } }
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Écran de démarrage : visible immédiatement, remplacé par l'app au montage -->
+      <div id="balafon-boot" aria-busy="true" aria-label="Chargement de Balafon TV">
+        <div class="eq" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+        <p class="marque">Balafon <b>TV</b></p>
+        <div class="barre" aria-hidden="true"><i></i></div>
+        <p class="etat">Connexion à l'antenne…</p>
+      </div>
+    </div>
     <script>
       /* ============================================================
-         Filet de sécurité ANTI-ÉCRAN-NOIR (exécuté avant les modules)
-         1. Piège toute erreur JavaScript globale (y compris pendant
-            l'évaluation des modules) et affiche un panneau lisible.
-         2. Si rien n'est monté après 6 s, affiche un diagnostic.
+         Filet de sécurité (exécuté avant les modules).
+         - Piège les erreurs JavaScript globales → panneau lisible.
+         - Si l'écran de démarrage est toujours là après 14 s
+           (script jamais chargé), affiche un diagnostic avec actions.
          ============================================================ */
       (function () {
         function panneau(titre, detail, accent) {
           var r = document.getElementById("root");
-          if (!r || r.childElementCount > 0) return;
+          if (!r) return;
+          if (!document.getElementById("balafon-boot") && r.childElementCount > 1) return;
           var couleur = accent || "239,68,68";
           r.innerHTML =
             '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#050505;padding:24px;font-family:system-ui,sans-serif">' +
@@ -39,7 +88,7 @@
             '<pre style="margin:0 0 14px;padding:14px;border-radius:10px;background:#0B0E14;border:1px solid #2A3142;color:rgb(' + couleur + ');font-size:12px;line-height:1.55;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow:auto">' + detail + "</pre>" +
             '<p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#9CA3AF">Ouvrez la console (F12) pour le détail complet.</p>' +
             '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
-            '<button onclick="try{Object.keys(localStorage).filter(function(k){return k.indexOf(&#39;balafon-&#39;)===0}).forEach(function(k){localStorage.removeItem(k)})}catch(e){};window.location.reload()" style="border:none;border-radius:10px;background:#FF3D00;color:#fff;font-weight:700;padding:10px 16px;cursor:pointer">Réinitialiser les données locales</button>' +
+            '<button onclick="try{Object.keys(localStorage).filter(function(k){return k.indexOf(&#39;balafon-&#39;)===0}).forEach(function(k){localStorage.removeItem(k)})}catch(e){};window.location.reload()" style="border:none;border-radius:10px;background:#E31E24;color:#fff;font-weight:700;padding:10px 16px;cursor:pointer">Réinitialiser les données locales</button>' +
             '<button onclick="window.location.reload()" style="border:1px solid #2A3142;border-radius:10px;background:#1A1F2E;color:#F7F8FA;font-weight:700;padding:10px 16px;cursor:pointer">Recharger</button>' +
             "</div></div></div>";
         }
@@ -56,15 +105,14 @@
         });
         window.addEventListener("load", function () {
           window.setTimeout(function () {
-            var r = document.getElementById("root");
-            if (r && r.childElementCount === 0) {
+            if (document.getElementById("balafon-boot")) {
               panneau(
                 "L\u2019application n\u2019a pas démarré",
-                "Aucun rendu produit après 6 secondes : script non chargé, bloqué par le navigateur, ou erreur JavaScript. Vérifiez la console (F12) puis rechargez.",
+                "Le script principal n\u2019a pas terminé son chargement après 14 secondes : connexion lente, script bloqué par le navigateur, ou erreur JavaScript. Vérifiez la console (F12) puis rechargez.",
                 "255,184,0"
               );
             }
-          }, 6000);
+          }, 14000);
         });
       })();
     </script>

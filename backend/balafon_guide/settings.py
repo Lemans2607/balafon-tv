@@ -1,13 +1,14 @@
 """
-Configuration Django — BALAFON + GUIDE.
+Django settings — BALAFON + GUIDE (EPG Balafon TV).
 
-Stack : Django 5 + DRF + Channels(Redis) + PostgreSQL 16 + SimpleJWT.
+Phase 1 : REST (DRF + SimpleJWT) + PostgreSQL.
+Phase 2 (non active ici) : Django Channels + Redis pour les alertes temps réel.
+
 Toutes les valeurs sensibles proviennent de variables d'environnement (.env).
 """
+import os
 from datetime import timedelta
 from pathlib import Path
-
-import os
 
 from dotenv import load_dotenv
 
@@ -16,10 +17,9 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-moi-avant-production")
 DEBUG = os.getenv("DEBUG", "True") == "True"
-ALLOWED_HOSTS = ["*"] if DEBUG else os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h]
 
 INSTALLED_APPS = [
-    "daphne",  # avant staticfiles pour servir l'ASGI (WebSocket)
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -30,13 +30,10 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
-    "channels",
-    "drf_spectacular",
-    # Métier
+    "channels",  # installé dès la phase 1, activé (ASGI) en phase 2
+    # Métier (2 apps seulement)
     "comptes",
     "programmation",
-    "alertes",
-    "integration_vmix",
 ]
 
 MIDDLEWARE = [
@@ -52,7 +49,8 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "balafon_guide.urls"
 WSGI_APPLICATION = "balafon_guide.wsgi.application"
-ASGI_APPLICATION = "balafon_guide.asgi.application"
+# ASGI_APPLICATION sera défini en phase 2 (Channels). En phase 1, runserver
+# fonctionne en WSGI ; l'app channels reste inactive mais prête.
 
 TEMPLATES = [
     {
@@ -70,12 +68,12 @@ TEMPLATES = [
     },
 ]
 
-# ------------------------------------------------------------- PostgreSQL 16
+# ---------------------------------------------------------------- PostgreSQL
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "balafon_guide"),
-        "USER": os.getenv("DB_USER", "balafon_admin"),
+        "NAME": os.getenv("DB_NAME", "balafon_tv"),
+        "USER": os.getenv("DB_USER", "postgres"),
         "PASSWORD": os.getenv("DB_PASSWORD", ""),
         "HOST": os.getenv("DB_HOST", "localhost"),
         "PORT": os.getenv("DB_PORT", "5432"),
@@ -83,61 +81,39 @@ DATABASES = {
     }
 }
 
-# ------------------------------------------------- WebSocket (Channels+Redis)
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(os.getenv("REDIS_HOST", "localhost"), int(os.getenv("REDIS_PORT", "6379")))],
-        },
-    }
-}
+# --------------------------------------------------------------- Custom user
+AUTH_USER_MODEL = "comptes.Utilisateur"
 
 # ------------------------------------------------------------------- DRF+JWT
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticatedOrReadOnly",),
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 50,
+    # Permission ouverte par défaut en développement ; serrée en production.
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "DEFAULT_PAGINATION_CLASS": None,
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=8),   # couvre une journée d'antenne
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=8),   # une journée d'antenne
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-SPECTACULAR_SETTINGS = {
-    "TITLE": "BALAFON + GUIDE API",
-    "DESCRIPTION": "EPG Balafon TV — grilles, émissions, alertes temps réel, synchro vMix.",
-    "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
-}
-
 # ----------------------------------------------------------------------- CORS
 CORS_ALLOWED_ORIGINS = [
-    o.strip()
-    for o in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
-    if o.strip()
+    "http://localhost:5173",
+    "http://localhost:4173",
+    "http://localhost:3000",
 ]
 
-# ---------------------------------------------------------------------- I18N
+# ------------------------------------------------------------------- Divers
 LANGUAGE_CODE = "fr-fr"
-TIME_ZONE = os.getenv("TIME_ZONE", "Africa/Douala")
+TIME_ZONE = "Africa/Douala"
 USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-AUTH_USER_MODEL = "comptes.Utilisateur"
-
-# ----------------------------------------------------------------------- vMix
-VMIX_MODE = os.getenv("VMIX_MODE", "simule")  # simule | reel
-VMIX_API_URL = os.getenv("VMIX_API_URL", "http://192.168.1.50:8088/api")
-VMIX_API_TIMEOUT = int(os.getenv("VMIX_API_TIMEOUT", "5"))
