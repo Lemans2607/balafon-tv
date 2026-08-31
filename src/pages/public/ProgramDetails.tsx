@@ -133,7 +133,7 @@ export function ProgramDetails() {
               )}
               <Link
                 to="/tv"
-                className="flex items-center gap-2 rounded-xl bg-balafon px-5 py-2.5 text-[13.5px] font-extrabold text-white shadow-[0_8px_24px_rgba(255,61,0,0.35)] transition-transform hover:scale-[1.03]"
+                className="flex items-center gap-2 rounded-xl bg-balafon px-5 py-2.5 text-[13.5px] font-extrabold text-ink-950 shadow-[0_8px_24px_rgba(242,121,15,0.35)] transition-transform hover:scale-[1.03]"
               >
                 <Play size={15} aria-hidden /> Regarder le direct
               </Link>

@@ -44,20 +44,20 @@ export function AdminBuilder() {
   const [pendingRemove, setPendingRemove] = useState<ScheduleItem | null>(null);
   const [picker, setPicker] = useState<{ open: boolean; startMin: number; endMin: number }>({ open: false, startMin: 0, endMin: 0 });
 
-  if (role !== "admin") {
+  if (role !== "admin" && role !== "directeur") {
     return (
       <div className="rounded-2xl border border-goldwarn/40 bg-goldwarn/8 p-8 text-center">
         <ShieldAlert size={28} className="mx-auto text-goldwarn" aria-hidden />
-        <h1 className="font-display mt-3 text-xl font-extrabold text-paper">Accès réservé — Admin Antenne</h1>
+        <h1 className="font-display mt-3 text-xl font-extrabold text-paper">Accès réservé — Direction & Admin Antenne</h1>
         <p className="mx-auto mt-2 max-w-md text-[13.5px] text-mist">
-          Le constructeur de grille est opéré par {USERS.admin.name}. Basculez en rôle Admin depuis la page de démonstration.
+          Le constructeur de grille est opéré par la Direction d’Antenne. Basculez de rôle depuis la page de démonstration.
         </p>
         <Button className="mt-5" onClick={() => navigate("/demo")}>Changer de rôle</Button>
       </div>
     );
   }
 
-  const user = USERS.admin;
+  const user = role === "directeur" ? USERS.directeur : USERS.admin;
   const grid = grids[selectedDate];
   const gridStatus = grid?.status ?? "draft";
   const items = scheduleMap[selectedDate] ?? [];

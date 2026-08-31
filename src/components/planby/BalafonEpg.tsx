@@ -259,7 +259,7 @@ export function BalafonEpg({
         onDragLeave={onDropProgram ? () => setDropHover(false) : undefined}
         onDrop={onDropProgram ? handleDrop : undefined}
         className={`relative overflow-hidden rounded-xl border transition-colors ${
-          dropHover ? "border-balafon/70 shadow-[0_0_0_3px_rgba(255,61,0,0.15)]" : "border-ink-700"
+          dropHover ? "border-balafon/70 shadow-[0_0_0_3px_rgba(242,121,15,0.18)]" : "border-ink-700"
         }`}
         style={{ height: heightPx, background: "#0B0E14" }}
       >

@@ -11,6 +11,7 @@ import {
   MonitorPlay,
   Settings,
   CalendarRange,
+  Users,
   Wifi,
   WifiOff,
 } from "lucide-react";
@@ -25,10 +26,13 @@ import { BALAFON_LOGO_URI } from "../planby/planbyMappers";
 import { Button, Drawer } from "../ui";
 import type { AppRole } from "../../types";
 
+/* Le Directeur d'Antenne EST l'administrateur de la plateforme :
+   il gère les comptes ET les grilles, et seul il valide. */
 const NAV: Array<{ to: string; label: string; icon: React.ReactNode; roles: AppRole[]; end?: boolean }> = [
   { to: "/studio", label: "Pilotage", icon: <LayoutDashboard size={16} />, roles: ["admin", "directeur", "regie"], end: true },
-  { to: "/studio/admin", label: "Constructeur EPG", icon: <CalendarRange size={16} />, roles: ["admin"] },
+  { to: "/studio/admin", label: "Constructeur EPG", icon: <CalendarRange size={16} />, roles: ["admin", "directeur"] },
   { to: "/studio/directeur", label: "Validation éditoriale", icon: <ClipboardCheck size={16} />, roles: ["admin", "directeur"] },
+  { to: "/studio/comptes", label: "Comptes & équipe", icon: <Users size={16} />, roles: ["directeur"] },
   { to: "/studio/regie", label: "Régie · Mission Control", icon: <MonitorPlay size={16} />, roles: ["admin", "directeur", "regie"] },
   { to: "/studio/programmes", label: "Bibliothèque", icon: <Library size={16} />, roles: ["admin", "directeur"] },
   { to: "/studio/grilles", label: "Grilles", icon: <KanbanSquare size={16} />, roles: ["admin", "directeur"] },
@@ -39,8 +43,8 @@ const NAV: Array<{ to: string; label: string; icon: React.ReactNode; roles: AppR
 
 const ROLE_LABEL: Record<string, string> = {
   admin: "Admin Antenne",
-  directeur: "Directeur d’Antenne",
-  regie: "Régie",
+  directeur: "Direction d’Antenne",
+  regie: "Régie · Diffusion",
 };
 
 export function StaffShell() {
@@ -183,7 +187,7 @@ export function StaffShell() {
             </h1>
             <span
               className="hidden rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider sm:inline"
-              style={{ background: "rgba(255,61,0,0.12)", color: "#FF6A3D" }}
+              style={{ background: "rgba(242,121,15,0.14)", color: "#FFA14D" }}
             >
               {ROLE_LABEL[role]}
             </span>

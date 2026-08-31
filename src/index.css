@@ -1,23 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink-950: #050505;
-  --color-ink-900: #0b0e14;
+  --color-ink-950: #07080c;
+  --color-ink-900: #0b0e15;
   --color-ink-850: #0f1320;
-  --color-ink-800: #111622;
-  --color-ink-700: #1a1f2e;
-  --color-ink-600: #2a3142;
-  --color-ink-500: #3a4256;
+  --color-ink-800: #121724;
+  --color-ink-700: #1b2130;
+  --color-ink-600: #2b3345;
+  --color-ink-500: #3c455c;
 
-  --color-balafon: #ff3d00;
-  --color-balafon-soft: #ff6a3d;
+  /* ----- Identité BALAFON : orange brand + bleu institutionnel ----- */
+  --color-balafon: #f2790f;
+  --color-balafon-deep: #cf5f00;
+  --color-balafon-soft: #ffa14d;
+  --color-ocean: #2e77d0;
+  --color-ocean-soft: #5c9ce8;
   --color-studio: #00f5a0;
   --color-goldwarn: #ffb800;
   --color-crit: #ef4444;
   --color-sysblue: #3b82f6;
   --color-paper: #f7f8fa;
-  --color-mist: #9ca3af;
-  --color-mist-dark: #6b7280;
+  --color-mist: #a3abbb;
+  --color-mist-dark: #6d7688;
 
   --font-display: "Archivo", "Manrope", sans-serif;
   --font-body: "Manrope", "Segoe UI", sans-serif;
@@ -113,6 +117,73 @@ body {
 /* ---------- Utilitaires typo ---------- */
 .font-display { font-family: var(--font-display); }
 .tracking-tightest { letter-spacing: -0.03em; }
+
+/* Gros numéros éditoriaux façon Canal+ (contour orange, rempli au survol) */
+.num-outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(242, 121, 15, 0.5);
+  transition: color 0.25s ease, -webkit-text-stroke-color 0.25s ease;
+}
+.group:hover .num-outline,
+.num-outline:hover {
+  color: rgba(242, 121, 15, 0.9);
+  -webkit-text-stroke-color: rgba(242, 121, 15, 0.9);
+}
+
+/* ---------- Halos ambiants (fond vivant, jamais plat) ---------- */
+.glow-balafon {
+  background:
+    radial-gradient(ellipse 55% 42% at 82% -6%, rgba(242, 121, 15, 0.16), transparent 62%),
+    radial-gradient(ellipse 42% 36% at 4% 104%, rgba(46, 119, 208, 0.12), transparent 60%);
+}
+.glow-ocean {
+  background:
+    radial-gradient(ellipse 50% 40% at 12% -8%, rgba(46, 119, 208, 0.14), transparent 60%),
+    radial-gradient(ellipse 46% 38% at 96% 102%, rgba(242, 121, 15, 0.1), transparent 62%);
+}
+
+/* Grain très léger pour casser les aplats */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+}
+
+/* Champ de formulaire Studio */
+.input-balafon {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #2b3345;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.62rem 0.9rem;
+  font-size: 13.5px;
+  color: #f7f8fa;
+  transition: border-color 0.2s ease;
+}
+.input-balafon::placeholder { color: #6d7688; }
+.input-balafon:focus {
+  outline: none;
+  border-color: rgba(242, 121, 15, 0.7);
+}
+select.input-balafon option { background: #121724; }
+
+/* Ligne de balayage broadcast (hero) */
+@keyframes scanline {
+  0% { transform: translateY(-120%); }
+  100% { transform: translateY(1200%); }
+}
+.scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 90px;
+  background: linear-gradient(to bottom, transparent, rgba(242, 121, 15, 0.05), transparent);
+  animation: scanline 9s linear infinite;
+  pointer-events: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .live-pulse, .soft-blink, .eq-bar1, .eq-bar2, .eq-bar3 { animation: none; }

@@ -20,7 +20,7 @@ export function FakePlayer({
   return (
     <Modal open={open} onClose={onClose} title={title} width="max-w-2xl">
       <div className="overflow-hidden rounded-xl border border-ink-600 bg-ink-950">
-        <div className="relative flex aspect-video flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,rgba(255,61,0,0.12),transparent_65%)]">
+        <div className="relative flex aspect-video flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,rgba(242,121,15,0.13),transparent_65%)]">
           <div className="flex h-16 items-end gap-1.5" aria-hidden>
             {[...Array(9)].map((_, i) => (
               <span
@@ -33,7 +33,7 @@ export function FakePlayer({
           <p className="mt-5 font-display text-[17px] font-extrabold text-paper">{title}</p>
           {subtitle && <p className="mt-1 text-[12.5px] text-mist">{subtitle}</p>}
           {live && (
-            <span className="live-pulse mt-4 inline-flex items-center gap-1.5 rounded-md bg-balafon px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-widest text-white">
+            <span className="live-pulse mt-4 inline-flex items-center gap-1.5 rounded-md bg-balafon px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-widest text-ink-950">
               <Radio size={11} aria-hidden /> Direct simulé
             </span>
           )}

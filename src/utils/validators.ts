@@ -20,6 +20,21 @@ export const schemaConnexion = z.object({
 });
 export type FormulaireConnexion = z.infer<typeof schemaConnexion>;
 
+/* ------------------------------------------------------- Compte utilisateur */
+export const schemaUtilisateur = z.object({
+  nom: z.string().trim().min(2, "Le nom complet est requis (2 caractères min)."),
+  email: z
+    .string()
+    .trim()
+    .email("Adresse email invalide.")
+    .refine((v) => v.endsWith("@balafon.media"), {
+      message: "Seuls les emails @balafon.media sont acceptés.",
+    }),
+  role: z.enum(["directeur", "admin", "regie"]),
+  fonction: z.string().trim(),
+});
+export type FormulaireUtilisateur = z.infer<typeof schemaUtilisateur>;
+
 /* ------------------------------------------------------- Émission */
 export const schemaEmission = z
   .object({

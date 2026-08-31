@@ -29,7 +29,7 @@ export function Button({
     lg: "px-5 py-2.5 text-[14px]",
   };
   const variants: Record<ButtonVariant, string> = {
-    primary: "bg-balafon text-white hover:bg-balafon-soft shadow-[0_4px_18px_rgba(255,61,0,0.3)]",
+    primary: "bg-balafon text-ink-950 hover:bg-balafon-soft shadow-[0_4px_18px_rgba(242,121,15,0.35)]",
     green: "bg-studio text-ink-950 hover:brightness-110 shadow-[0_4px_18px_rgba(0,245,160,0.25)]",
     outline: "border border-ink-600 bg-ink-800 text-paper hover:border-ink-500 hover:bg-ink-700",
     ghost: "text-mist hover:bg-ink-700 hover:text-paper",
@@ -64,7 +64,7 @@ export function Badge({
   );
 }
 
-export function ProgressBar({ value, color = "#FF3D00" }: { value: number; color?: string }) {
+export function ProgressBar({ value, color = "#F2790F" }: { value: number; color?: string }) {
   return (
     <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-600" role="progressbar" aria-valuenow={Math.round(value)} aria-valuemin={0} aria-valuemax={100}>
       <div

@@ -110,7 +110,7 @@ export function RegieControl() {
           </span>
         )}
         {isLive && (
-          <span className="live-pulse rounded bg-balafon px-1.5 py-px text-[9px] font-extrabold uppercase text-white">Live</span>
+          <span className="live-pulse rounded bg-balafon px-1.5 py-px text-[9px] font-extrabold uppercase text-ink-950">Live</span>
         )}
       </div>
       {typeof progress === "number" && (
@@ -151,7 +151,7 @@ export function RegieControl() {
           <SlotCard
             label="En cours"
             title={live.currentProgram ? live.currentProgram.title : "Hors antenne"}
-            color="#FF3D00"
+            color="#F2790F"
             time={live.current ? `${live.current.startTime} – ${live.current.endTime}` : "00:00 – 06:00"}
             progress={live.currentProgram && live.currentProgram.category !== "off-air" ? live.progress : undefined}
             live={live.currentProgram !== null && live.currentProgram.category !== "off-air"}

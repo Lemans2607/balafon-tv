@@ -140,7 +140,7 @@ export function PublicNavbar() {
 
         <Link
           to="/tv"
-          className="live-pulse ml-2 hidden items-center gap-1.5 rounded-lg bg-balafon px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-white sm:flex"
+          className="live-pulse ml-2 hidden items-center gap-1.5 rounded-lg bg-balafon px-2.5 py-1.5 text-[11px] font-extrabold uppercase tracking-wider text-ink-950 sm:flex"
           aria-label={`En direct : ${liveTitle}`}
         >
           <PlayCircle size={13} aria-hidden />

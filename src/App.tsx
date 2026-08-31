@@ -16,6 +16,7 @@ import { StudioDashboard } from "./pages/staff/StudioDashboard";
 import { AdminBuilder } from "./pages/staff/AdminBuilder";
 import { DirecteurKanban, GridsPage } from "./pages/staff/DirecteurKanban";
 import { RegieControl } from "./pages/staff/RegieControl";
+import { ComptesPage } from "./pages/staff/ComptesPage";
 import { ProgramLibrary } from "./pages/staff/ProgramLibrary";
 import { AlertCenter } from "./pages/staff/AlertCenter";
 import { GridHistory } from "./pages/staff/GridHistory";
@@ -77,7 +78,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
                   localStorage.removeItem("balafon-app-v1");
                   window.location.reload();
                 }}
-                className="flex items-center gap-2 rounded-xl bg-[#FF3D00] px-5 py-2.5 text-[13px] font-extrabold text-white transition-transform hover:scale-[1.02]"
+                className="flex items-center gap-2 rounded-xl bg-[#F2790F] px-5 py-2.5 text-[13px] font-extrabold text-ink-950 transition-transform hover:scale-[1.02]"
               >
                 <RotateCcw size={14} /> Réinitialiser et recharger
               </button>
@@ -177,6 +178,7 @@ function AnimatedOutlet() {
           <Route index element={page("Pilotage", <StudioDashboard />)} />
           <Route path="admin" element={page("Constructeur EPG", <AdminBuilder />)} />
           <Route path="directeur" element={page("Validation éditoriale", <DirecteurKanban />)} />
+          <Route path="comptes" element={page("Comptes & équipe", <ComptesPage />)} />
           <Route path="regie" element={page("Régie", <RegieControl />)} />
           <Route path="programmes" element={page("Bibliothèque", <ProgramLibrary />)} />
           <Route path="grilles" element={page("Grilles", <GridsPage />)} />

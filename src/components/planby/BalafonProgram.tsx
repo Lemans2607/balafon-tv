@@ -200,7 +200,7 @@ export function BalafonProgram({ program, isBaseTimeFormat, mode, onSelect, onRe
 function LiveDot({ compact }: { compact?: boolean }) {
   return (
     <span
-      className="live-pulse inline-flex items-center gap-1 rounded-sm bg-balafon px-1 py-px text-[9px] font-extrabold uppercase tracking-wider text-white"
+      className="live-pulse inline-flex items-center gap-1 rounded-sm bg-balafon px-1 py-px text-[9px] font-extrabold uppercase tracking-wider text-ink-950"
       aria-label="En direct"
     >
       <span className="inline-block h-1.5 w-1.5 rounded-full bg-white" aria-hidden />

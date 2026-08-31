@@ -116,7 +116,7 @@ export const CATEGORY_META: Record<
   ProgramCategory,
   { label: string; color: string; soft: string }
 > = {
-  news: { label: "Information", color: "#FF3D00", soft: "rgba(255,61,0,0.14)" },
+  news: { label: "Information", color: "#F2790F", soft: "rgba(242,121,15,0.15)" },
   talk: { label: "Débat & Talk", color: "#3B82F6", soft: "rgba(59,130,246,0.14)" },
   entertainment: { label: "Divertissement", color: "#FFB800", soft: "rgba(255,184,0,0.14)" },
   culture: { label: "Culture", color: "#00F5A0", soft: "rgba(0,245,160,0.12)" },
