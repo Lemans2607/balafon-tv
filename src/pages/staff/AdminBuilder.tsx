@@ -52,9 +52,9 @@ export function AdminBuilder() {
         <h1 className="font-display mt-3 text-xl font-extrabold text-paper">Accès réservé — Direction d’Antenne</h1>
         <p className="mx-auto mt-2 max-w-md text-[13.5px] text-mist">
           Le constructeur de grille est opéré par le Directeur d’Antenne (administrateur de la plateforme).
-          Basculez de rôle depuis la page de démonstration.
+          Connectez-vous avec un compte Direction pour y accéder.
         </p>
-        <Button className="mt-5" onClick={() => navigate("/demo")}>Changer de rôle</Button>
+        <Button className="mt-5" onClick={() => navigate("/login")}>Se connecter</Button>
       </div>
     );
   }

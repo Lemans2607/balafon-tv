@@ -153,15 +153,6 @@ export function PublicNavbar() {
           <ThemeToggle compact />
         </span>
 
-        <Link
-          to="/demo"
-          className="ml-1 hidden h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[11px] font-extrabold text-paper transition-colors hover:border-balafon sm:flex"
-          aria-label="Espace Studio — changer de rôle"
-          title="Espace Studio (démo)"
-        >
-          ST
-        </Link>
-
         <button
           type="button"
           className="rounded-lg p-2 text-paper md:hidden"
@@ -178,7 +169,6 @@ export function PublicNavbar() {
             { to: "/tv", label: "Accueil" },
             { to: "/tv/guide", label: "Guide TV" },
             { to: "/tv/replay", label: "Replay" },
-            { to: "/demo", label: "Espace Studio (démo)" },
           ].map((l) => (
             <Link
               key={l.to}

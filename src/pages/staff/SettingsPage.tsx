@@ -74,8 +74,9 @@ export function SettingsPage() {
           </div>
         </div>
         <p className="mt-4 text-[12.5px] leading-relaxed text-mist">
-          Les permissions (construction, validation, diffusion) sont appliquées par rôle. Changez de
-          rôle depuis <span className="font-bold text-balafon">/demo</span> sans rechargement.
+          Les permissions (construction, validation, diffusion) sont appliquées par rôle. Le rôle actif
+          suit le compte connecté (JWT) — déconnectez-vous puis reconnectez-vous avec un autre compte
+          pour en changer.
         </p>
       </section>
 

@@ -1,11 +1,10 @@
 /* ============================================================
    AuthContext — authentification JWT + rôle.
 
-   - En mode API (VITE_API_URL défini) : login réel via /auth/connexion/,
-     rôle décodé depuis le JWT (jwt-decode), refresh transparent.
-   - En mode démo : aucun backend requis ; le rôle actif vient du
-     sélecteur /demo (appStore). isAuthenticated reflète l'un ou l'autre.
-   ============================================================ */
+    - En mode API (VITE_API_URL défini) : login réel via /auth/connexion/,
+      rôle décodé depuis le JWT (jwt-decode), refresh transparent.
+    - En mode démo : aucun backend requis ; le rôle actif vient de l'appStore
+      (Direction d'Antenne par défaut). isAuthenticated reflète l'un ou l'autre.   ============================================================ */
 import {
   createContext,
   useCallback,

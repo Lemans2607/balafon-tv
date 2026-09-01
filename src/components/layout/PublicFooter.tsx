@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronUp, MapPin, Phone } from "lucide-react";
+import { ChevronUp, Mail, MapPin, Phone } from "lucide-react";
 import { BALAFON_LOGO_URI } from "../planby/planbyMappers";
 
 /* ============================================================
@@ -17,12 +17,20 @@ const NAVIGATION = [
   { label: "Le direct", to: "/tv" },
   { label: "Guide TV", to: "/tv/guide" },
   { label: "Replay", to: "/tv/replay" },
-  { label: "Balafon Studio", to: "/studio" },
 ];
 
-const HOTLINE = "+237 650 25 25 50";
+const HOTLINE = "+237 650 252 550";
 const HOTLINE_TEL = "+237650252550";
 const WHATSAPP_URL = "https://wa.me/237650252550";
+
+/* Coordonnées officielles — aucune donnée fictive. */
+const SIEGE = ["Bonamouang Akwa-Nord", "Douala — Cameroun"];
+const TELEPHONES = [
+  { label: "+237 689 99 99 99", tel: "+237689999999" },
+  { label: "+237 650 252 550", tel: "+237650252550" },
+  { label: "+237 690 248 090", tel: "+237690248090" },
+];
+const EMAIL = "contact@balafon.media";
 
 const STORES = [
   {
@@ -130,22 +138,33 @@ export function PublicFooter() {
               <li className="flex items-start gap-2">
                 <MapPin size={14} className="mt-0.5 shrink-0 text-balafon" aria-hidden />
                 <span>
-                  Rue Joss, Akwa
+                  {SIEGE[0]}
                   <br />
-                  Douala — Cameroun
+                  {SIEGE[1]}
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <Phone size={14} className="mt-0.5 shrink-0 text-balafon" aria-hidden />
-                <span>
-                  Hotline{" "}
-                  <a
-                    href={`tel:${HOTLINE_TEL}`}
-                    className="font-mono font-bold text-paper transition-colors hover:text-balafon"
-                  >
-                    {HOTLINE}
-                  </a>
+                <span className="flex flex-col">
+                  {TELEPHONES.map((t) => (
+                    <a
+                      key={t.tel}
+                      href={`tel:${t.tel}`}
+                      className="font-mono font-bold text-paper transition-colors hover:text-balafon"
+                    >
+                      {t.label}
+                    </a>
+                  ))}
                 </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Mail size={14} className="mt-0.5 shrink-0 text-balafon" aria-hidden />
+                <a
+                  href={`mailto:${EMAIL}`}
+                  className="font-bold text-paper transition-colors hover:text-balafon"
+                >
+                  {EMAIL}
+                </a>
               </li>
             </ul>
             <MessageButton />

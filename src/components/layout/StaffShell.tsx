@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   Bell,
   ClipboardCheck,
@@ -23,7 +23,7 @@ import { useNow } from "../../hooks/useNow";
 import { formatClock } from "../../utils/time";
 import { USERS } from "../../data/schedules";
 import { BALAFON_LOGO_URI } from "../planby/planbyMappers";
-import { Button, Drawer } from "../ui";
+import { Drawer } from "../ui";
 import { ThemeToggle } from "../ui/ThemeToggle";
 import type { AppRole } from "../../types";
 
@@ -49,45 +49,16 @@ const ROLE_LABEL: Record<string, string> = {
 
 export function StaffShell() {
   const role = useAppStore((s) => s.role);
-  const setRole = useAppStore((s) => s.setRole);
   const alerts = useAlertStore((s) => s.alerts);
   const vmixStatus = useVmixStore((s) => s.status);
   const dataSource = useScheduleStore((s) => s.source);
   const now = useNow(1000);
   const location = useLocation();
-  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (role === "public") {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-ink-900 bg-grid-faint p-6">
-        <div className="w-full max-w-md rounded-2xl border border-ink-600 bg-ink-800 p-8 text-center">
-          <img src={BALAFON_LOGO_URI} alt="" className="mx-auto h-14 w-14 rounded-xl" aria-hidden />
-          <h1 className="mt-4 font-display text-[22px] font-black text-paper">Balafon Studio</h1>
-          <p className="mt-2 text-[13.5px] leading-relaxed text-mist">
-            L’espace professionnel est réservé aux équipes. Choisissez un rôle de démonstration pour
-            entrer sans rechargement.
-          </p>
-          <div className="mt-6 grid gap-2">
-            {(["directeur", "regie"] as const).map((r) => (
-              <Button
-                key={r}
-                variant="outline"
-                onClick={() => {
-                  setRole(r);
-                  navigate("/studio");
-                }}
-              >
-                Entrer en {ROLE_LABEL[r]}
-              </Button>
-            ))}
-          </div>
-          <Link to="/demo" className="mt-4 inline-block text-[12px] font-bold text-balafon hover:underline">
-            Ouvrir la page des rôles (/demo)
-          </Link>
-        </div>
-      </div>
-    );
+    /* Plus de sélecteur de rôle public : l'accès au Studio passe par la connexion. */
+    return <Navigate to="/login" replace />;
   }
 
   const user = USERS[role] ?? USERS.directeur;
@@ -153,14 +124,8 @@ export function StaffShell() {
             <p className="truncate text-[10.5px] text-mist-dark">{user.roleLabel}</p>
           </div>
         </div>
-        <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="mt-3 flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            to="/demo"
-            className="flex-1 rounded-lg border border-ink-600 px-2 py-2 text-center text-[11px] font-bold text-mist transition-colors hover:border-balafon hover:text-balafon"
-          >
-            Changer de rôle
-          </Link>
         </div>
       </div>
     </div>
