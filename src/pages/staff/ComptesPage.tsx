@@ -6,6 +6,7 @@ import { Mail, ShieldCheck, Trash2, UserCog, UserPlus, UserX } from "lucide-reac
 import type { z } from "zod";
 
 import { useAppStore } from "../../store/appStore";
+import { useAuth } from "../../context/AuthContext";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { Badge, Button, EmptyState, Modal } from "../../components/ui";
 import { schemaUtilisateur } from "../../utils/validators";
@@ -58,7 +59,7 @@ const useComptes = create<ComptesState>()(
 );
 
 export function ComptesPage() {
-  const roleActif = useAppStore((s) => s.role);
+  const { role: roleActif } = useAuth();
   const toast = useAppStore((s) => s.toast);
   const addLog = useScheduleStore((s) => s.addLog);
   const { comptes, ajouter, modifier, supprimer } = useComptes();
@@ -128,7 +129,7 @@ export function ComptesPage() {
     setSuppression(null);
   };
 
-  const estDirecteur = roleActif === "directeur";
+  const estDirecteur = roleActif === "directeur_antenne";
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">

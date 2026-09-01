@@ -1,25 +1,22 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Lock, Mail, Radio, ShieldCheck, Tv, Wifi } from "lucide-react";
+import { ArrowRight, Lock, Mail, Wifi } from "lucide-react";
 import type { z } from "zod";
 
 import { useAuth } from "../context/AuthContext";
-import { useAppStore } from "../store/appStore";
 import { schemaConnexion } from "../utils/validators";
 import { useNow } from "../hooks/useNow";
 import { formatClock, todayKey, labelDay } from "../utils/time";
 import { BALAFON_LOGO_URI } from "../components/planby/planbyMappers";
-import type { AppRole } from "../types";
 
 /* ============================================================
    CONNEXION — ESPACE STUDIO BALAFON TV
    Panneau gauche : identité d'antenne (horloge, égaliseur).
-   Panneau droit : formulaire JWT (Zod) + accès démo par rôle.
+   Panneau droit : formulaire d'authentification JWT (Zod).
    ============================================================ */
 export function LoginPage() {
   const { login, connexionEnCours, erreur, modeApi } = useAuth();
-  const setRoleDemo = useAppStore((s) => s.setRole);
   const navigate = useNavigate();
   const now = useNow(1000);
 
@@ -48,19 +45,6 @@ export function LoginPage() {
       /* l'erreur globale est affichée via `erreur` */
     }
   };
-
-  const entrerDemo = (role: AppRole, vers: string) => {
-    setRoleDemo(role);
-    navigate(vers);
-  };
-
-  const rolesDemo = useMemo(
-    () => [
-      { role: "directeur" as AppRole, vers: "/studio/directeur", label: "Direction d’Antenne", sous: "Comptes + grilles + validation", icone: <ShieldCheck size={15} />, teinte: "#E31E24" },
-      { role: "regie" as AppRole, vers: "/studio/regie", label: "Régie · Diffuseur", sous: "Lecture seule + alertes + vMix", icone: <Radio size={15} />, teinte: "#00F5A0" },
-    ],
-    []
-  );
 
   return (
     <div className="grid min-h-screen bg-ink-950 text-paper lg:grid-cols-[1.15fr_1fr]">
@@ -182,51 +166,6 @@ export function LoginPage() {
               {!connexionEnCours && <ArrowRight size={16} aria-hidden />}
             </button>
           </form>
-
-          <div className="mt-9">
-            <p className="flex items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.2em] text-mist-dark">
-              <span className="h-px flex-1 bg-white/10" aria-hidden />
-              Accès démonstration
-              <span className="h-px flex-1 bg-white/10" aria-hidden />
-            </p>
-            <div className="mt-4 grid gap-2">
-              {rolesDemo.map((r) => (
-                <button
-                  key={r.role}
-                  type="button"
-                  onClick={() => entrerDemo(r.role, r.vers)}
-                  className="group flex items-center gap-3 rounded-xl border border-ink-700 bg-white/[0.03] px-4 py-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-balafon/50 hover:bg-white/[0.06]"
-                >
-                  <span
-                    className="flex h-9 w-9 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110"
-                    style={{ background: `${r.teinte}1c`, color: r.teinte }}
-                    aria-hidden
-                  >
-                    {r.icone}
-                  </span>
-                  <span className="flex-1">
-                    <span className="block text-[13.5px] font-extrabold">{r.label}</span>
-                    <span className="text-[11px] text-mist-dark">{r.sous}</span>
-                  </span>
-                  <ArrowRight size={15} className="text-mist-dark transition-all group-hover:translate-x-1 group-hover:text-balafon" aria-hidden />
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => entrerDemo("public", "/tv")}
-                className="group flex items-center gap-3 rounded-xl border border-ink-700 bg-white/[0.03] px-4 py-3 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-ocean/60 hover:bg-white/[0.06]"
-              >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-ocean/15 text-ocean-soft transition-transform duration-300 group-hover:scale-110" aria-hidden>
-                  <Tv size={15} />
-                </span>
-                <span className="flex-1">
-                  <span className="block text-[13.5px] font-extrabold">Portail public</span>
-                  <span className="text-[11px] text-mist-dark">Direct, guide TV & replay — sans compte</span>
-                </span>
-                <ArrowRight size={15} className="text-mist-dark transition-all group-hover:translate-x-1 group-hover:text-ocean-soft" aria-hidden />
-              </button>
-            </div>
-          </div>
 
           <p className="mt-8 flex items-center gap-2 text-[11.5px] text-mist-dark">
             <Wifi size={12} aria-hidden />

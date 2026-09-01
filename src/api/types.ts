@@ -3,8 +3,11 @@
    Cohérents avec backend/programmation/models.py, comptes, alertes.
    ============================================================ */
 
-/** Rôles métier calculés par le backend (drapeaux est_admin / est_directeur_antenne). */
-export type RoleBackend = "administrateur" | "directeur_antenne" | "diffuseur";
+/**
+ * Rôles métier — source de vérité unique côté frontend (champ `role` du backend).
+ * Le Directeur d'Antenne EST l'administrateur : il n'existe pas de rôle admin séparé.
+ */
+export type RoleBackend = "directeur_antenne" | "diffuseur";
 
 export type StatutGrille = "brouillon" | "en_validation" | "validee";
 
@@ -26,10 +29,7 @@ export interface Utilisateur {
   email: string;
   first_name: string;
   last_name: string;
-  /** Drapeaux backend (source de vérité) */
-  est_admin?: boolean;
-  est_directeur_antenne?: boolean;
-  /** Rôle calculé par le backend : administrateur / directeur_antenne / diffuseur */
+  /** Rôle métier (source de vérité) : directeur_antenne | diffuseur */
   role: RoleBackend;
   date_joined?: string;
 }

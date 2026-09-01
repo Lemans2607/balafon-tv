@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Clock3, ExternalLink, FileEdit, PieChart, Send, ShieldAlert, Undo2 } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
+import { useAuth } from "../../context/AuthContext";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { useAlertStore } from "../../store/alertStore";
 import { Badge, Button, ProgressBar } from "../../components/ui";
@@ -22,7 +23,7 @@ const COLUMNS: Array<{ id: GridStatus; title: string; hint: string }> = [
    DIRECTEUR — Validation éditoriale (Kanban)
    ============================================================ */
 export function DirecteurKanban() {
-  const role = useAppStore((s) => s.role);
+  const { role } = useAuth();
   const toast = useAppStore((s) => s.toast);
   const setSelectedDate = useAppStore((s) => s.setSelectedDate);
   const grids = useScheduleStore((s) => s.grids);
@@ -34,7 +35,7 @@ export function DirecteurKanban() {
   const navigate = useNavigate();
   const [dragOver, setDragOver] = useState<GridStatus | null>(null);
 
-  const isDirector = role === "directeur";
+  const isDirector = role === "directeur_antenne";
   const user = USERS.directeur;
 
   const dates = useMemo(() => Object.keys(grids).sort(), [grids]);

@@ -1,10 +1,9 @@
 /* ============================================================
-   AuthContext — authentification JWT + rôle.
+   AuthContext — authentification JWT réelle contre le backend Django.
 
-   - En mode API (VITE_API_URL défini) : login réel via /auth/connexion/,
-     rôle décodé depuis le JWT (jwt-decode), refresh transparent.
-   - En mode démo : aucun backend requis ; le rôle actif vient du
-     sélecteur /demo (appStore). isAuthenticated reflète l'un ou l'autre.
+   C'est l'UNIQUE source du rôle dans l'interface : `role` provient du
+   jeton JWT (ou du profil restauré), jamais d'un sélecteur local.
+   Le mode démo a été supprimé — l'app exige un compte authentifié.
    ============================================================ */
 import {
   createContext,
@@ -20,7 +19,6 @@ import { jwtDecode } from "jwt-decode";
 import * as authApi from "../api/auth";
 import { backendConfigure, stockageJetons } from "../api/client";
 import type { RoleBackend, Utilisateur } from "../api/types";
-import { useAppStore } from "../store/appStore";
 
 interface JetonDecodes {
   role?: RoleBackend;
@@ -44,7 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [utilisateur, setUtilisateur] = useState<Utilisateur | null>(null);
   const [connexionEnCours, setConnexionEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const roleDemo = useAppStore((s) => s.role);
 
   const modeApi = backendConfigure();
 
@@ -59,28 +56,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         stockageJetons.effacer();
         return;
       }
-      setUtilisateur((u) => u ?? { role: decode.role ?? "diffuseur" } as Utilisateur);
+      setUtilisateur((u) => u ?? ({ role: decode.role ?? "diffuseur" } as Utilisateur));
     } catch {
       stockageJetons.effacer();
     }
   }, []);
 
-  const login = useCallback(
-    async (email: string, motDePasse: string) => {
-      setConnexionEnCours(true);
-      setErreur(null);
-      try {
-        const u = await authApi.connexion(email, motDePasse);
-        setUtilisateur(u);
-      } catch {
-        setErreur("Identifiants invalides ou backend injoignable.");
-        throw new Error("login");
-      } finally {
-        setConnexionEnCours(false);
-      }
-    },
-    []
-  );
+  const login = useCallback(async (email: string, motDePasse: string) => {
+    setConnexionEnCours(true);
+    setErreur(null);
+    try {
+      const u = await authApi.connexion(email, motDePasse);
+      setUtilisateur(u);
+    } catch {
+      setErreur("Identifiants invalides ou backend injoignable.");
+      throw new Error("login");
+    } finally {
+      setConnexionEnCours(false);
+    }
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -88,29 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* la suppression locale prime */
     }
+    stockageJetons.effacer();
     setUtilisateur(null);
   }, []);
 
-  const role = useMemo<RoleBackend | null>(() => {
-    if (utilisateur?.role) return utilisateur.role;
-    // Repli sur le rôle de démonstration (directeur / regie).
-    if (roleDemo === "directeur") return "directeur_antenne";
-    if (roleDemo === "regie") return "diffuseur";
-    return null;
-  }, [utilisateur, roleDemo]);
+  /* Le rôle vient exclusivement de l'utilisateur authentifié (JWT). */
+  const role = useMemo<RoleBackend | null>(() => utilisateur?.role ?? null, [utilisateur]);
 
-  /* Un utilisateur JWT réel pilote le rôle de l'espace Studio :
-     administrateur / directeur_antenne → Direction, diffuseur → Régie.
-     (Sans backend, le Directeur d'Antenne est le compte initial du site.) */
-  useEffect(() => {
-    if (!utilisateur?.role) return;
-    const cible = utilisateur.role === "diffuseur" ? "regie" : "directeur";
-    if (useAppStore.getState().role !== cible) useAppStore.getState().setRole(cible);
-  }, [utilisateur]);
-
-  /* En mode API, il faut un utilisateur connecté ; sinon la Direction est le
-     compte initial du site (super admin déjà créé). */
-  const estAuthentifie = modeApi ? utilisateur !== null : roleDemo !== "public";
+  const estAuthentifie = utilisateur !== null;
 
   const valeur = useMemo(
     () => ({ utilisateur, role, estAuthentifie, modeApi, connexionEnCours, erreur, login, logout }),

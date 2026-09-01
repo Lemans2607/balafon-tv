@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Database, Globe2, RefreshCcw, Satellite, UserRound, Webhook } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
+import { useAuth } from "../../context/AuthContext";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { useAlertStore } from "../../store/alertStore";
 import { useVmixStore, VMIX_STATUS_META } from "../../store/vmixStore";
@@ -10,7 +11,7 @@ import { Badge, Button, Modal, SimClock } from "../../components/ui";
 import { fetchGrillesValidees, getApiBaseUrl, getWsUrl, isBackendConfigured } from "../../services/backend";
 
 export function SettingsPage() {
-  const role = useAppStore((s) => s.role);
+  const { role } = useAuth();
   const toast = useAppStore((s) => s.toast);
   const resetAll = useScheduleStore((s) => s.resetAll);
   const dataSource = useScheduleStore((s) => s.source);
@@ -48,7 +49,7 @@ export function SettingsPage() {
     }
   };
 
-  const user = role !== "public" ? USERS[role] : USERS.directeur;
+  const user = USERS[role === "diffuseur" ? "regie" : "directeur"];
   const vMeta = VMIX_STATUS_META[vmix.status];
 
   const doReset = () => {
@@ -74,8 +75,9 @@ export function SettingsPage() {
           </div>
         </div>
         <p className="mt-4 text-[12.5px] leading-relaxed text-mist">
-          Les permissions (construction, validation, diffusion) sont appliquées par rôle. Changez de
-          rôle depuis <span className="font-bold text-balafon">/demo</span> sans rechargement.
+          Les permissions (construction, validation, diffusion) sont appliquées par rôle. Le rôle actif
+          suit le compte connecté (JWT) — déconnectez-vous puis reconnectez-vous avec un autre compte
+          pour en changer.
         </p>
       </section>
 
