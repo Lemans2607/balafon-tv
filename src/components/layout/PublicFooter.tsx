@@ -1,11 +1,13 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { MapPin, Phone } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronUp, MapPin, Phone } from "lucide-react";
 import { BALAFON_LOGO_URI } from "../planby/planbyMappers";
 
 /* ============================================================
    Pied de page public — Balafon+ (Balafon Media Group)
    4 colonnes : Balafon+ (téléchargement) · Navigation · Contact · Suivez-nous
-   + widget flottant WhatsApp / Appel (bas droite).
+   + bouton « Message » ancré dans la colonne Contact (WhatsApp / Appel).
 
    Règle : aucun lien fictif — uniquement des URLs réelles.
    ============================================================ */
@@ -146,6 +148,7 @@ export function PublicFooter() {
                 </span>
               </li>
             </ul>
+            <MessageButton />
           </div>
 
           {/* ---------------- Colonne 4 — Suivez-nous ---------------- */}
@@ -174,10 +177,9 @@ export function PublicFooter() {
           </div>
         </div>
 
-        {/* Barre de copyright — marges bas + droite réservées au widget flottant
-            (positionné fixed en bas à droite, ~72×130 px) pour éviter tout chevauchement. */}
-        <div className="border-t border-white/5 py-5 pb-32 md:pb-32">
-          <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 pr-24 sm:px-6 sm:pr-24 md:flex-row md:items-center md:justify-between md:pr-28">
+        {/* Barre de copyright — plus de widget flottant : marges normales. */}
+        <div className="border-t border-white/5 py-5">
+          <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 sm:px-6 md:flex-row md:items-center md:justify-between">
             <p className="text-[11.5px] text-mist-dark">
               © {new Date().getFullYear()} Balafon Media Group — Tous droits réservés.
             </p>
@@ -187,38 +189,92 @@ export function PublicFooter() {
           </div>
         </div>
       </footer>
-
-      {/* ---------------- Widget flottant WhatsApp + Appel ---------------- */}
-      <FloatingContact />
     </>
   );
 }
 
 /* ============================================================
-   Widget flottant — WhatsApp (vert) + Appel (brand), bas droite.
-   z-index sous la navbar (z-70), au-dessus du contenu.
+   Bouton « Message » — ancré dans la colonne Contact (ne flotte pas).
+   Au clic, ouvre un popup WhatsApp / Appel au-dessus du bouton.
    ============================================================ */
-function FloatingContact() {
+function MessageButton() {
+  const [ouvert, setOuvert] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  /* Ferme le popup au clic en dehors du bouton. */
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOuvert(false);
+    };
+    window.addEventListener("mousedown", onClick);
+    return () => window.removeEventListener("mousedown", onClick);
+  }, []);
+
   return (
-    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
-      <a
-        href={WHATSAPP_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Discuter avec Balafon Media sur WhatsApp"
-        title="Message en direct — WhatsApp"
-        className="flex h-13 w-13 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_8px_24px_rgba(37,211,102,0.4)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_30px_rgba(37,211,102,0.55)]"
+    <div ref={ref} className="relative mt-5 inline-block">
+      <button
+        type="button"
+        onClick={() => setOuvert((o) => !o)}
+        aria-expanded={ouvert}
+        aria-haspopup="menu"
+        aria-label="Ouvrir les options de contact (WhatsApp ou appel)"
+        className="flex items-center gap-2 rounded-full bg-balafon px-5 py-2.5 text-[13.5px] font-extrabold text-white shadow-[0_6px_20px_rgba(227,30,36,0.35)] transition-all duration-200 hover:bg-balafon-soft hover:shadow-[0_8px_24px_rgba(227,30,36,0.5)]"
       >
         <WhatsAppIcon />
-      </a>
-      <a
-        href={`tel:${HOTLINE_TEL}`}
-        aria-label={`Appeler Balafon Media au ${HOTLINE}`}
-        title={`Appeler — ${HOTLINE}`}
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-balafon text-white shadow-[0_8px_24px_rgba(227,30,36,0.4)] transition-all duration-200 hover:-translate-y-1 hover:bg-balafon-soft hover:shadow-[0_12px_30px_rgba(227,30,36,0.55)]"
-      >
-        <Phone size={18} aria-hidden />
-      </a>
+        Message
+        <ChevronUp
+          size={15}
+          aria-hidden
+          className={`transition-transform duration-200 ${ouvert ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <AnimatePresence>
+        {ouvert && (
+          <motion.div
+            role="menu"
+            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="absolute bottom-full left-0 z-40 mb-3 w-56 overflow-hidden rounded-xl border border-white/12 bg-[#121724] shadow-[0_18px_44px_rgba(2,4,9,0.6)]"
+          >
+            <p className="border-b border-white/8 px-4 py-2.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-mist-dark">
+              Nous joindre
+            </p>
+            <a
+              role="menuitem"
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Discuter avec Balafon Media sur WhatsApp"
+              className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-white/[0.05]"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white">
+                <WhatsAppIcon />
+              </span>
+              <span>
+                <span className="block text-[13px] font-extrabold text-paper">WhatsApp</span>
+                <span className="block font-mono text-[10.5px] text-mist-dark">{HOTLINE}</span>
+              </span>
+            </a>
+            <a
+              role="menuitem"
+              href={`tel:${HOTLINE_TEL}`}
+              aria-label={`Appeler Balafon Media au ${HOTLINE}`}
+              className="flex items-center gap-3 border-t border-white/8 px-4 py-3 transition-colors hover:bg-white/[0.05]"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-balafon text-white">
+                <Phone size={16} aria-hidden />
+              </span>
+              <span>
+                <span className="block text-[13px] font-extrabold text-paper">Appeler</span>
+                <span className="block font-mono text-[10.5px] text-mist-dark">{HOTLINE}</span>
+              </span>
+            </a>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
