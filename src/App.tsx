@@ -204,15 +204,6 @@ function Root() {
     el.style.colorScheme = theme;
   }, [theme]);
 
-  /* Garde-fou : tout rôle obsolète persisté (anciens "public" / "admin")
-     bascule sur la Direction d'Antenne — le super admin du site. */
-  useEffect(() => {
-    const app = useAppStore.getState();
-    if (app.role !== "directeur" && app.role !== "regie") {
-      app.setRole("directeur");
-    }
-  }, []);
-
   /* ============================================================
      Amorçage :
      1. démo locale (catalogue embarqué) — toujours disponible ;
@@ -276,10 +267,25 @@ function Root() {
           }
         >
           <Route index element={page("Pilotage", <StudioDashboard />)} />
-          <Route path="admin" element={page("Constructeur EPG", <AdminBuilder />)} />
+          {/* Ergonomie côté client — le vrai verrou est côté serveur (DRF). */}
+          <Route
+            path="admin"
+            element={
+              <ProtectedRoute rolesAutorises={["directeur_antenne"]}>
+                {page("Constructeur EPG", <AdminBuilder />)}
+              </ProtectedRoute>
+            }
+          />
           <Route path="directeur" element={page("Validation éditoriale", <DirecteurKanban />)} />
           <Route path="grilles" element={page("Grilles", <GridsPage />)} />
-          <Route path="comptes" element={page("Comptes & équipe", <ComptesPage />)} />
+          <Route
+            path="comptes"
+            element={
+              <ProtectedRoute rolesAutorises={["directeur_antenne"]}>
+                {page("Comptes & équipe", <ComptesPage />)}
+              </ProtectedRoute>
+            }
+          />
           <Route path="regie" element={page("Régie", <RegieControl />)} />
           <Route path="programmes" element={page("Bibliothèque", <ProgramLibrary />)} />
           <Route path="alertes" element={page("Alertes", <AlertCenter />)} />

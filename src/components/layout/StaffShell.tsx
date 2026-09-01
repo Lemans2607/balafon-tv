@@ -15,7 +15,7 @@ import {
   Wifi,
   WifiOff,
 } from "lucide-react";
-import { useAppStore } from "../../store/appStore";
+import { useAuth } from "../../context/AuthContext";
 import { useAlertStore } from "../../store/alertStore";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { useVmixStore, VMIX_STATUS_META } from "../../store/vmixStore";
@@ -25,30 +25,30 @@ import { USERS } from "../../data/schedules";
 import { BALAFON_LOGO_URI } from "../planby/planbyMappers";
 import { Drawer } from "../ui";
 import { ThemeToggle } from "../ui/ThemeToggle";
-import type { AppRole } from "../../types";
+import type { RoleBackend } from "../../api/types";
 
 /* Le Directeur d'Antenne EST l'administrateur de la plateforme :
    il gère les comptes ET les grilles, et seul il valide. */
-const NAV: Array<{ to: string; label: string; icon: React.ReactNode; roles: AppRole[]; end?: boolean }> = [
-  { to: "/studio", label: "Pilotage", icon: <LayoutDashboard size={16} />, roles: ["directeur", "regie"], end: true },
-  { to: "/studio/admin", label: "Constructeur EPG", icon: <CalendarRange size={16} />, roles: ["directeur"] },
-  { to: "/studio/directeur", label: "Validation éditoriale", icon: <ClipboardCheck size={16} />, roles: ["directeur"] },
-  { to: "/studio/comptes", label: "Comptes & équipe", icon: <Users size={16} />, roles: ["directeur"] },
-  { to: "/studio/regie", label: "Régie · Mission Control", icon: <MonitorPlay size={16} />, roles: ["directeur", "regie"] },
-  { to: "/studio/programmes", label: "Bibliothèque", icon: <Library size={16} />, roles: ["directeur"] },
-  { to: "/studio/grilles", label: "Grilles", icon: <KanbanSquare size={16} />, roles: ["directeur"] },
-  { to: "/studio/alertes", label: "Alertes", icon: <Bell size={16} />, roles: ["directeur", "regie"] },
-  { to: "/studio/historique", label: "Historique", icon: <History size={16} />, roles: ["directeur", "regie"] },
-  { to: "/studio/parametres", label: "Paramètres", icon: <Settings size={16} />, roles: ["directeur", "regie"] },
+const NAV: Array<{ to: string; label: string; icon: React.ReactNode; roles: RoleBackend[]; end?: boolean }> = [
+  { to: "/studio", label: "Pilotage", icon: <LayoutDashboard size={16} />, roles: ["directeur_antenne", "diffuseur"], end: true },
+  { to: "/studio/admin", label: "Constructeur EPG", icon: <CalendarRange size={16} />, roles: ["directeur_antenne"] },
+  { to: "/studio/directeur", label: "Validation éditoriale", icon: <ClipboardCheck size={16} />, roles: ["directeur_antenne"] },
+  { to: "/studio/comptes", label: "Comptes & équipe", icon: <Users size={16} />, roles: ["directeur_antenne"] },
+  { to: "/studio/regie", label: "Régie · Mission Control", icon: <MonitorPlay size={16} />, roles: ["directeur_antenne", "diffuseur"] },
+  { to: "/studio/programmes", label: "Bibliothèque", icon: <Library size={16} />, roles: ["directeur_antenne"] },
+  { to: "/studio/grilles", label: "Grilles", icon: <KanbanSquare size={16} />, roles: ["directeur_antenne"] },
+  { to: "/studio/alertes", label: "Alertes", icon: <Bell size={16} />, roles: ["directeur_antenne", "diffuseur"] },
+  { to: "/studio/historique", label: "Historique", icon: <History size={16} />, roles: ["directeur_antenne", "diffuseur"] },
+  { to: "/studio/parametres", label: "Paramètres", icon: <Settings size={16} />, roles: ["directeur_antenne", "diffuseur"] },
 ];
 
-const ROLE_LABEL: Record<string, string> = {
-  directeur: "Direction d’Antenne",
-  regie: "Régie · Diffusion",
+const ROLE_LABEL: Record<RoleBackend, string> = {
+  directeur_antenne: "Direction d’Antenne",
+  diffuseur: "Régie · Diffusion",
 };
 
 export function StaffShell() {
-  const role = useAppStore((s) => s.role);
+  const { role, utilisateur } = useAuth();
   const alerts = useAlertStore((s) => s.alerts);
   const vmixStatus = useVmixStore((s) => s.status);
   const dataSource = useScheduleStore((s) => s.source);
@@ -56,12 +56,17 @@ export function StaffShell() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  if (role === "public") {
-    /* Plus de sélecteur de rôle public : l'accès au Studio passe par la connexion. */
+  if (!role) {
+    /* Accès au Studio uniquement sur connexion réelle (JWT). */
     return <Navigate to="/login" replace />;
   }
 
-  const user = USERS[role] ?? USERS.directeur;
+  const cleUser = role === "directeur_antenne" ? "directeur" : "regie";
+  const profil = USERS[cleUser] ?? USERS.directeur;
+  const nomAffiche =
+    utilisateur && (utilisateur.first_name || utilisateur.last_name)
+      ? `${utilisateur.first_name ?? ""} ${utilisateur.last_name ?? ""}`.trim()
+      : profil.name;
   const unacked = alerts.filter((a) => !a.acknowledged).length;
   const vMeta = VMIX_STATUS_META[vmixStatus];
   const currentNav = NAV.find((n) =>
@@ -117,11 +122,11 @@ export function StaffShell() {
       <div className="border-t border-ink-700 p-4">
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-balafon/20 text-[12px] font-extrabold text-balafon">
-            {user.initials}
+            {profil.initials}
           </span>
           <div className="min-w-0">
-            <p className="truncate text-[12.5px] font-bold text-paper">{user.name}</p>
-            <p className="truncate text-[10.5px] text-mist-dark">{user.roleLabel}</p>
+            <p className="truncate text-[12.5px] font-bold text-paper">{nomAffiche}</p>
+            <p className="truncate text-[10.5px] text-mist-dark">{ROLE_LABEL[role]}</p>
           </div>
         </div>
         <div className="mt-3 flex items-center gap-2">

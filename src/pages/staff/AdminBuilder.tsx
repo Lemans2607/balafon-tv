@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { AlertTriangle, GripVertical, Search, Send, ShieldAlert, Upload } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
+import { useAuth } from "../../context/AuthContext";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { useAlertStore } from "../../store/alertStore";
 import { useVmixStore } from "../../store/vmixStore";
@@ -23,7 +24,7 @@ import { USERS } from "../../data/schedules";
    Détection de trous & contrôle de complétude hors Planby.
    ============================================================ */
 export function AdminBuilder() {
-  const role = useAppStore((s) => s.role);
+  const { role } = useAuth();
   const selectedDate = useAppStore((s) => s.selectedDate);
   const setSelectedDate = useAppStore((s) => s.setSelectedDate);
   const toast = useAppStore((s) => s.toast);
@@ -45,7 +46,7 @@ export function AdminBuilder() {
   const [pendingRemove, setPendingRemove] = useState<ScheduleItem | null>(null);
   const [picker, setPicker] = useState<{ open: boolean; startMin: number; endMin: number }>({ open: false, startMin: 0, endMin: 0 });
 
-  if (role !== "directeur") {
+  if (role !== "directeur_antenne") {
     return (
       <div className="rounded-2xl border border-goldwarn/40 bg-goldwarn/8 p-8 text-center">
         <ShieldAlert size={28} className="mx-auto text-goldwarn" aria-hidden />
