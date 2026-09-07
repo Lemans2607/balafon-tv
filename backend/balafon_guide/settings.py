@@ -68,18 +68,31 @@ TEMPLATES = [
     },
 ]
 
-# ---------------------------------------------------------------- PostgreSQL
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME", "balafon_tv"),
-        "USER": os.getenv("DB_USER", "postgres"),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
-        "OPTIONS": {"connect_timeout": 5},
+# ---------------------------------------------------------------- Base de données
+# DB_ENGINE=sqlite  → SQLite local, zéro service externe (idéal pour développer
+#                     le frontend sans installer/démarrer PostgreSQL).
+# DB_ENGINE=postgresql (défaut) → PostgreSQL 16 (docker compose up -d ou natif).
+if os.getenv("DB_ENGINE", "postgresql") == "sqlite":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME", "balafon_tv"),
+            "USER": os.getenv("DB_USER", "postgres"),
+            "PASSWORD": os.getenv("DB_PASSWORD", ""),
+            # 127.0.0.1 explicite évite la résolution IPv6 (::1) qui peut
+            # ralentir / faire échouer la connexion sur Windows.
+            "HOST": os.getenv("DB_HOST", "127.0.0.1"),
+            "PORT": os.getenv("DB_PORT", "5432"),
+            "OPTIONS": {"connect_timeout": 5},
+        }
+    }
 
 # --------------------------------------------------------------- Custom user
 AUTH_USER_MODEL = "comptes.Utilisateur"

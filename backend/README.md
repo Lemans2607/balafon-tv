@@ -16,27 +16,66 @@ Le serializer `/auth/profil/` expose un champ `role` calculé
 
 ## Démarrage (Windows PowerShell, depuis `backend/`)
 
+### Option A — SQLite (recommandé pour commencer, zéro dépendance)
+
+Le `.env` fourni est déjà configuré en `DB_ENGINE=sqlite`. Aucun serveur de base
+de données n'est nécessaire :
+
 ```powershell
 # 1. Environnement
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-copy .env.example .env        # éditer DB_PASSWORD si besoin
+copy .env.example .env        # déjà en DB_ENGINE=sqlite
 
-# 2. PostgreSQL locale : créer la base
-psql -U postgres -c "CREATE DATABASE balafon_tv;"
-
-# 3. Vérification + migrations
-python manage.py check
-python manage.py makemigrations comptes
-python manage.py makemigrations programmation
-python manage.py migrate      # « comptes » doit être appliqué avant admin
-
-# 4. Premier compte + données réelles
-python manage.py createsuperuser
+# 2. Migrations + compte + données
+python manage.py makemigrations comptes programmation
+python manage.py migrate
+python manage.py creer_compte --email direction@balafon.media `
+    --motdepasse "MotDePasseSolide!" --prenom Martin --nom Essomba `
+    --role directeur_antenne --superuser
 python manage.py charger_emissions_demo     # vraies émissions Balafon TV
+
+# 3. Lancer
+python manage.py runserver    # http://localhost:8000/api/
+```
+
+### Option B — PostgreSQL 16 (production / docker)
+
+```powershell
+# 1. Démarrer PostgreSQL + Redis (crée la base balafon_tv, user postgres)
+docker compose up -d
+docker ps                     # balafon_guide_db doit être "healthy"
+
+# 2. Passer le .env en postgresql
+#    éditer .env : DB_ENGINE=postgresql
+
+# 3. Migrations + compte + données (mêmes commandes que l'option A)
+python manage.py makemigrations comptes programmation
+python manage.py migrate
+python manage.py creer_compte --email direction@balafon.media `
+    --motdepasse "MotDePasseSolide!" --role directeur_antenne --superuser
+python manage.py charger_emissions_demo
 python manage.py runserver
 ```
+
+> `creer_compte` fixe le **vrai rôle métier** (RBAC) — `createsuperuser` seul ne
+> donne que les droits Django admin, pas le rôle `directeur_antenne`.
+
+## Dépannage
+
+**`connection timeout expired` sur `localhost:5432`** : Django ne trouve aucun
+serveur PostgreSQL. Causes et remèdes :
+
+1. **PostgreSQL pas démarré** → c'est le cas le plus courant. Soit vous lancez
+   `docker compose up -d`, soit vous démarrez le service Windows
+   (`Services` → `postgresql-x64-16` → Démarrer), soit — le plus simple — vous
+   passez en SQLite (`DB_ENGINE=sqlite` dans `.env`) qui ne requiert rien.
+2. **Base / utilisateur inexistants** → `docker-compose.yml` et `.env` sont
+   alignés sur `balafon_tv` / `postgres`. Si vous avez une install native, créez
+   la base : `psql -U postgres -c "CREATE DATABASE balafon_tv;"`.
+3. **Résolution IPv6 (`::1`)** → le `.env` force `DB_HOST=127.0.0.1` pour
+   l'éviter sur Windows.
 
 `charger_emissions_demo` accepte le catalogue hebdomadaire
 (`data/emissions_reelles_balafon_tv.json`) **et** le format contrat (liste
