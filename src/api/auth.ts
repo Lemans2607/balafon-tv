@@ -2,6 +2,11 @@
 import { api, stockageJetons } from "./client";
 import type { ReponseConnexion, Utilisateur } from "./types";
 
+export interface CompteAPI extends Utilisateur {
+  est_admin: boolean;
+  est_directeur_antenne: boolean;
+}
+
 export async function connexion(email: string, motDePasse: string): Promise<Utilisateur> {
   const { data } = await api.post<ReponseConnexion>("/auth/connexion/", {
     email,
@@ -23,4 +28,9 @@ export async function deconnexion(): Promise<void> {
 export async function profil(): Promise<Utilisateur> {
   const { data } = await api.get<Utilisateur>("/auth/profil/");
   return data;
+}
+
+export async function listerComptes(): Promise<CompteAPI[]> {
+  const { data } = await api.get<CompteAPI[] | { results: CompteAPI[] }>("/auth/comptes/");
+  return Array.isArray(data) ? data : data.results;
 }

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, ArrowRight, BarChart3, Bell, LayoutDashboard, MonitorPlay, Radio } from "lucide-react";
+import { Activity, ArrowRight, BarChart3, Bell, CalendarPlus, LayoutDashboard, MonitorPlay, Radio } from "lucide-react";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { useAlertStore } from "../../store/alertStore";
 import { useVmixStore, VMIX_STATUS_META } from "../../store/vmixStore";
+import { useAuth } from "../../context/AuthContext";
 import { useCurrentProgram, useNow } from "../../hooks/useNow";
 import { dateKey } from "../../utils/time";
 import { validateGridForPublish } from "../../utils/validation";
@@ -13,11 +14,12 @@ import { STATUS_META } from "../../types";
 import { BalafonEpg } from "../../components/planby/BalafonEpg";
 import { AlertCard } from "../../components/alerts/AlertCard";
 import { GenreChart } from "../../components/charts/GenreChart";
-import { ProgressBar, SimClock } from "../../components/ui";
+import { ProgressBar } from "../../components/ui";
 
 type DashboardTab = "pilotage" | "analyse";
 
 export function StudioDashboard() {
+  const { role } = useAuth();
   const now = useNow(1000);
   const today = dateKey(now);
   const scheduleMap = useScheduleStore((s) => s.scheduleMap);
@@ -70,6 +72,20 @@ export function StudioDashboard() {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-mono text-[10.5px] font-bold uppercase tracking-[0.22em] text-balafon">Balafon Studio</p>
+          <h1 className="font-display mt-1 text-2xl font-extrabold uppercase text-paper">Pilotage de l’antenne</h1>
+        </div>
+        {role === "directeur_antenne" && (
+          <Link
+            to="/studio/grilles"
+            className="inline-flex items-center gap-2 rounded-lg bg-balafon px-4 py-2.5 text-[12.5px] font-extrabold text-white shadow-[0_5px_18px_rgba(227,30,36,0.28)] transition-transform hover:-translate-y-0.5"
+          >
+            <CalendarPlus size={15} aria-hidden /> Créer une grille
+          </Link>
+        )}
+      </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((s, i) => (
           <motion.div
@@ -176,7 +192,7 @@ export function StudioDashboard() {
             </h2>
             <ul className="space-y-2.5">
               {logs.slice(0, 5).map((l) => (
-                <li key={l.id} className="border-l-2 pl-3" style={{ borderColor: l.severity === "critical" ? "#EF4444" : l.severity === "warning" ? "#FFB800" : "#2A3142" }}>
+                <li key={l.id} className="border-l-2 pl-3" style={{ borderColor: l.severity === "critical" ? "#EF4444" : l.severity === "warning" ? "#FFB800" : "var(--color-ink-600)" }}>
                   <p className="text-[12.5px] font-bold text-paper">{l.action}</p>
                   <p className="text-[11.5px] leading-snug text-mist">{l.details}</p>
                   <p className="mt-0.5 font-mono text-[10px] text-mist-dark">{l.user} · {l.at.slice(0, 16).replace("T", " ")}</p>
@@ -186,7 +202,6 @@ export function StudioDashboard() {
             </ul>
           </section>
 
-          <SimClock compact />
         </div>
             </div>
           </motion.div>
@@ -228,7 +243,6 @@ export function StudioDashboard() {
                   Ouvrir la validation éditoriale <ArrowRight size={13} aria-hidden />
                 </Link>
               </section>
-              <SimClock compact />
             </div>
           </motion.div>
         )}

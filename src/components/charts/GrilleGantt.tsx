@@ -11,6 +11,7 @@ import {
 } from "recharts";
 
 import { useScheduleStore } from "../../store/scheduleStore";
+import { useThemeStore } from "../../store/themeStore";
 import { CATEGORY_META } from "../../types";
 import { toMinutes } from "../../utils/time";
 
@@ -31,6 +32,7 @@ function etiquette(min: number): string {
 export function GrilleGantt({ date, now }: { date: string; now: Date }) {
   const scheduleMap = useScheduleStore((s) => s.scheduleMap);
   const programs = useScheduleStore((s) => s.programs);
+  const light = useThemeStore((s) => s.theme === "light");
 
   const data = useMemo(() => {
     const parId = new Map(programs.map((p) => [p.id, p]));
@@ -83,21 +85,23 @@ export function GrilleGantt({ date, now }: { date: string; now: Date }) {
             domain={[0, FENETRE_FIN - FENETRE_DEBUT]}
             ticks={ticks}
             tickFormatter={(v: number) => etiquette(v + FENETRE_DEBUT)}
-            tick={{ fill: "#8b94a5", fontSize: 10.5, fontFamily: "'JetBrains Mono', monospace" }}
-            axisLine={{ stroke: "#232b3d" }}
+            tick={{ fill: light ? "#556072" : "#8b94a5", fontSize: 10.5, fontFamily: "'JetBrains Mono', monospace" }}
+            axisLine={{ stroke: light ? "#d2d7e1" : "#232b3d" }}
             tickLine={false}
           />
           <YAxis type="category" dataKey="key" hide />
           <Tooltip
-            cursor={{ fill: "rgba(255,255,255,0.04)" }}
+            cursor={{ fill: light ? "rgba(19,24,34,0.05)" : "rgba(255,255,255,0.04)" }}
             contentStyle={{
-              background: "#121724",
-              border: "1px solid #2b3345",
+              background: light ? "#ffffff" : "#121724",
+              border: `1px solid ${light ? "#e2e5ec" : "#2b3345"}`,
               borderRadius: 10,
               fontSize: 12,
-              color: "#f7f8fa",
-              boxShadow: "0 12px 28px rgba(0,0,0,0.5)",
+              color: light ? "#131822" : "#f7f8fa",
+              boxShadow: light ? "0 12px 28px rgba(15,23,42,0.12)" : "0 12px 28px rgba(0,0,0,0.5)",
             }}
+            labelStyle={{ color: light ? "#131822" : "#f7f8fa" }}
+            itemStyle={{ color: light ? "#131822" : "#f7f8fa" }}
             formatter={(_v: unknown, _n: unknown, item: { payload?: { titre?: string; categorie?: string; plage?: string } }) => {
               const p = item?.payload;
               return [`${p?.titre ?? ""} · ${p?.categorie ?? ""}`, p?.plage ?? ""];

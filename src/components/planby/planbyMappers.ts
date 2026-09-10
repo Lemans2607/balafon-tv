@@ -41,8 +41,8 @@ export interface PlanbyEpgData {
   durationMinutes: number;
 }
 
-export const BALAFON_LOGO_URI =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='10' fill='%23FF3D00'/%3E%3Cg fill='%23050505'%3E%3Crect x='9' y='15' width='5' height='18' rx='2.5'/%3E%3Crect x='17' y='11' width='5' height='26' rx='2.5'/%3E%3Crect x='25' y='13' width='5' height='22' rx='2.5'/%3E%3Crect x='33' y='17' width='5' height='14' rx='2.5'/%3E%3C/g%3E%3C/svg%3E";
+export const BALAFON_LOGO_URI = "/favicon.svg";
+export const BALAFON_MEDIA_LOGO_URI = "/balafon-media.svg";
 
 /** Chaîne Planby représentant Balafon TV — la seule chaîne du portail */
 export const BALAFON_CHANNELS = [

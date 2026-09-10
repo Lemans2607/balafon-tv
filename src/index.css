@@ -59,27 +59,47 @@ body {
 .theme-light ::-webkit-scrollbar-track { background: #f6f7f9; }
 .theme-light ::-webkit-scrollbar-thumb { background: #d2d7e1; }
 
+/* ---------- Surfaces vitrées adaptatives (verre dépoli) ----------
+   Remplacent les bg-white/[x%] et border-white/x bruts : sur fond
+   sombre ils ajoutent un voile blanc, mais une fois le thème basculé
+   en clair (ink-950/900 devenus quasi blancs) ce même voile blanc
+   devient invisible. On tinte donc vers l'encre en thème clair pour
+   garder un contraste de surface lisible dans les deux modes. */
+.glass-surface { background-color: rgba(255, 255, 255, 0.04); }
+.glass-surface-strong { background-color: rgba(255, 255, 255, 0.07); }
+.glass-hover { transition: background-color 0.2s ease; }
+.glass-hover:hover { background-color: rgba(255, 255, 255, 0.05); }
+.glass-hover-strong { transition: background-color 0.2s ease; }
+.glass-hover-strong:hover { background-color: rgba(255, 255, 255, 0.07); }
+.glass-border { border-color: rgba(255, 255, 255, 0.1); }
+.glass-border-soft { border-color: rgba(255, 255, 255, 0.08); }
+.glass-border-faint { border-color: rgba(255, 255, 255, 0.05); }
+.glass-border-strong { border-color: rgba(255, 255, 255, 0.12); }
+
+.theme-light .glass-surface { background-color: rgba(19, 24, 34, 0.035); }
+.theme-light .glass-surface-strong { background-color: rgba(19, 24, 34, 0.065); }
+.theme-light .glass-hover:hover { background-color: rgba(19, 24, 34, 0.045); }
+.theme-light .glass-hover-strong:hover { background-color: rgba(19, 24, 34, 0.065); }
+.theme-light .glass-border { border-color: rgba(19, 24, 34, 0.12); }
+.theme-light .glass-border-soft { border-color: rgba(19, 24, 34, 0.09); }
+.theme-light .glass-border-faint { border-color: rgba(19, 24, 34, 0.07); }
+.theme-light .glass-border-strong { border-color: rgba(19, 24, 34, 0.15); }
+
 /* Sélection aux couleurs de la marque */
 ::selection {
   background: rgba(227, 30, 36, 0.85);
   color: #ffffff;
 }
 
-/* Toile EPG — reste un « moniteur broadcast » sombre même en thème clair,
-   pour garantir la lisibilité de la grille horaire. */
+/* Toile EPG : partage les mêmes neutres que le reste de l'application. */
 .epg-surface {
-  --color-ink-950: #07080c;
-  --color-ink-900: #0b0e15;
-  --color-ink-850: #0f1320;
-  --color-ink-800: #121724;
-  --color-ink-700: #1b2130;
-  --color-ink-600: #2b3345;
-  --color-ink-500: #3c455c;
-  --color-paper: #f7f8fa;
-  --color-mist: #a3abbb;
-  --color-mist-dark: #6d7688;
-  color-scheme: dark;
+  color-scheme: inherit;
 }
+
+/* Surfaces explicitement sombres dans les composants suivent aussi le clair. */
+.theme-light .bg-\[\#0a0d14\] { background-color: #ffffff; }
+.theme-light .bg-\[\#160b0d\] { background-color: #fff1f2; }
+.theme-light .bg-\[\#050505\] { background-color: #eceef3; }
 
 /* Liseré tricolore signature Balafon (rouge · blanc · bleu) */
 .brand-rule {
@@ -280,6 +300,18 @@ body {
   border-color: rgba(227, 30, 36, 0.7);
 }
 select.input-balafon option { background: #121724; }
+
+/* Le champ était câblé en dur pour le thème sombre (texte quasi blanc,
+   fond translucide blanc) : en clair, le texte devenait illisible sur
+   fond clair. On retinte vers l'encre, à l'identique de la logique
+   .theme-light déjà utilisée ailleurs. */
+.theme-light .input-balafon {
+  border-color: #d2d7e1;
+  background: rgba(19, 24, 34, 0.03);
+  color: #131822;
+}
+.theme-light .input-balafon::placeholder { color: #8b94a5; }
+.theme-light select.input-balafon option { background: #ffffff; color: #131822; }
 
 /* Ligne de balayage broadcast (hero) */
 @keyframes scanline {

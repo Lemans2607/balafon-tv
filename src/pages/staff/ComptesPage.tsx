@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { motion } from "framer-motion";
@@ -11,6 +11,7 @@ import { useScheduleStore } from "../../store/scheduleStore";
 import { Badge, Button, EmptyState, Modal } from "../../components/ui";
 import { schemaUtilisateur } from "../../utils/validators";
 import type { UserRole } from "../../types";
+import * as authApi from "../../api/auth";
 
 /* ============================================================
    COMPTES & ÉQUIPE — gérés par le Directeur d'Antenne
@@ -40,6 +41,7 @@ const ROLE_META: Record<UserRole, { label: string; color: string; soft: string }
 
 interface ComptesState {
   comptes: Compte[];
+  remplacer: (comptes: Compte[]) => void;
   ajouter: (c: Omit<Compte, "id">) => void;
   modifier: (id: string, patch: Partial<Compte>) => void;
   supprimer: (id: string) => void;
@@ -49,6 +51,7 @@ const useComptes = create<ComptesState>()(
   persist(
     (set, get) => ({
       comptes: COMPTES_INITIAUX,
+      remplacer: (comptes) => set({ comptes }),
       ajouter: (c) => set({ comptes: [...get().comptes, { ...c, id: `c-${Date.now()}` }] }),
       modifier: (id, patch) =>
         set({ comptes: get().comptes.map((x) => (x.id === id ? { ...x, ...patch } : x)) }),
@@ -62,7 +65,7 @@ export function ComptesPage() {
   const { role: roleActif } = useAuth();
   const toast = useAppStore((s) => s.toast);
   const addLog = useScheduleStore((s) => s.addLog);
-  const { comptes, ajouter, modifier, supprimer } = useComptes();
+  const { comptes, remplacer, ajouter, modifier, supprimer } = useComptes();
 
   const [filtre, setFiltre] = useState<"all" | UserRole>("all");
   const [modal, setModal] = useState<{ ouvert: boolean; edition?: Compte }>({ ouvert: false });
@@ -74,6 +77,26 @@ export function ComptesPage() {
   const [role, setRole] = useState<UserRole>("regie");
   const [fonction, setFonction] = useState("");
   const [erreurs, setErreurs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let actif = true;
+    void authApi.listerComptes().then((comptesApi) => {
+      if (!actif) return;
+      remplacer(
+        comptesApi.map((compte) => ({
+          id: String(compte.id),
+          nom: `${compte.first_name} ${compte.last_name}`.trim() || compte.email,
+          email: compte.email,
+          role: compte.est_directeur_antenne || compte.est_admin ? "directeur" : "regie",
+          fonction: compte.role === "directeur_antenne" ? "Direction d’Antenne" : "Régie · Diffuseur",
+          actif: true,
+        }))
+      );
+    }).catch(() => undefined);
+    return () => {
+      actif = false;
+    };
+  }, [remplacer]);
 
   const visibles = useMemo(
     () => comptes.filter((c) => filtre === "all" || c.role === filtre),
@@ -160,12 +183,18 @@ export function ComptesPage() {
         )}
       </div>
 
-      <p className="flex items-center gap-2 text-[12px] text-mist-dark">
-        <ShieldCheck size={13} className="text-balafon" aria-hidden />
-        La gestion des comptes relève du Directeur d’Antenne. En production, ces données vivent dans
-        <span className="font-mono text-mist">/api/comptes/</span> (Django) et les comptes réels se créent avec
-        <span className="font-mono text-mist">manage.py creer_compte</span>.
-      </p>
+      <div className="flex flex-col gap-4 rounded-xl border border-balafon/20 bg-balafon/[0.04] p-4 md:flex-row md:items-center md:justify-between">
+        <p className="flex items-start gap-2 text-[12px] leading-relaxed text-mist">
+          <ShieldCheck size={15} className="mt-0.5 shrink-0 text-balafon" aria-hidden />
+          <span>La gestion des comptes relève du Directeur d’Antenne.</span>
+        </p>
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-ink-600 bg-ink-900/60 px-3 py-2 font-mono text-xs text-mist">
+          <span className="text-mist-dark">API Django</span>
+          <span className="text-balafon">/api/comptes/</span>
+          <span className="text-mist-dark">·</span>
+          <span className="break-all text-mist">manage.py creer_compte</span>
+        </div>
+      </div>
 
       {visibles.length === 0 ? (
         <EmptyState
@@ -254,7 +283,7 @@ export function ComptesPage() {
             <input value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Ex. : Aïcha Mbarga" className="input-balafon" />
           </ChampForm>
           <ChampForm label="Email professionnel" erreur={erreurs.email}>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="prenom.nom@balafon.media" className="input-balafon" />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="prenom.nom@exemple.com" className="input-balafon" />
           </ChampForm>
           <ChampForm label="Rôle" erreur={erreurs.role}>
             <select value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="input-balafon">

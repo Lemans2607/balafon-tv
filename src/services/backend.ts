@@ -3,9 +3,9 @@ import type { GrilleAPI } from "../utils/planbyAdapter";
 /* ============================================================
    Client REST — backend Django (DRF)
    Contrat conforme au guide d'intégration (Phase 4) :
-     GET  {VITE_API_URL}/chaines/
-     GET  {VITE_API_URL}/grilles/?statut=validee   → hydratation EPG
-     POST {VITE_API_URL}/auth/token/               → JWT
+     GET  {VITE_API_URL}/api/chaines/
+     GET  {VITE_API_URL}/api/grilles/?statut=validee   → hydratation EPG
+     POST {VITE_API_URL}/api/auth/connexion/           → JWT
 
    Si VITE_API_URL n'est pas défini ou si le backend est
    injoignable, l'application bascule en mode démo local
@@ -23,6 +23,12 @@ export function getApiBaseUrl(): string {
   return base.replace(/\/+$/, "");
 }
 
+/** Racine des routes DRF : toutes montées sous /api/ côté Django (voir urls.py). */
+function getApiRootUrl(): string {
+  const base = getApiBaseUrl();
+  return base ? `${base}/api` : "";
+}
+
 export function isBackendConfigured(): boolean {
   return getApiBaseUrl().length > 0;
 }
@@ -32,7 +38,7 @@ export function getWsUrl(): string {
 }
 
 async function getJSON<T>(path: string, timeoutMs = 4000): Promise<T | null> {
-  const base = getApiBaseUrl();
+  const base = getApiRootUrl();
   if (!base) return null;
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), timeoutMs);
@@ -73,13 +79,13 @@ export async function fetchChaines(): Promise<Array<{ slug: string; nom: string 
  * Adapter le chemin si le backend expose `/auth/jwt/create/` (cf. guide Phase 4.2).
  */
 export async function requestToken(email: string, password: string): Promise<string | null> {
-  const base = getApiBaseUrl();
+  const base = getApiRootUrl();
   if (!base) return null;
   try {
-    const res = await fetch(`${base}/auth/token/`, {
+    const res = await fetch(`${base}/auth/connexion/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, mot_de_passe: password }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { access?: string; token?: string };

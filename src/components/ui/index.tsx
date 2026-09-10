@@ -315,8 +315,8 @@ export function SimClock({ compact = false }: { compact?: boolean }) {
             onClick={() => {
               if (p.v === "evening") {
                 const d = new Date();
-                const target = 18 * 60 - (d.getHours() * 60 + d.getMinutes());
-                apply(target);
+                const targetSeconds = 18 * 60 * 60 - (d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds());
+                apply(targetSeconds / 60);
               } else apply(p.v as number);
             }}
             className={`rounded-md border px-2 py-1 font-mono text-[11px] font-bold transition-colors ${

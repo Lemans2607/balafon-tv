@@ -39,8 +39,11 @@ export const stockageJetons = {
   },
 };
 
+/** Toutes les routes DRF sont montées sous /api/ côté Django (voir urls.py). */
+export const API_ROOT_URL: string = API_BASE_URL ? `${API_BASE_URL}/api` : "";
+
 export const api: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL ? `${API_BASE_URL.replace(/\/$/, "")}` : undefined,
+  baseURL: API_ROOT_URL || undefined,
   headers: { "Content-Type": "application/json" },
   timeout: 8000,
 });
@@ -51,7 +54,7 @@ let rafraichissementEnCours: Promise<string> | null = null;
 async function rafraichir(): Promise<string> {
   const refresh = stockageJetons.lireRefresh();
   if (!refresh) throw new Error("Aucun refresh token");
-  const { data } = await axios.post(`${API_BASE_URL}/auth/rafraichir/`, { refresh });
+  const { data } = await axios.post(`${API_ROOT_URL}/auth/rafraichir/`, { refresh });
   const access: string = data.access;
   const ancienRefresh: string = stockageJetons.lireRefresh() ?? refresh;
   stockageJetons.enregistrer(access, data.refresh ?? ancienRefresh);

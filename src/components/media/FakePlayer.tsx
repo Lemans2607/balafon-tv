@@ -19,9 +19,9 @@ export function FakePlayer({
 }) {
   return (
     <Modal open={open} onClose={onClose} title={title} width="max-w-2xl">
-      <div className="overflow-hidden rounded-xl border border-ink-600 bg-ink-950">
-        <div className="relative flex aspect-video flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,rgba(227,30,36,0.13),transparent_65%)]">
-          <div className="flex h-16 items-end gap-1.5" aria-hidden>
+      <div className="relative z-0 overflow-hidden rounded-xl border border-ink-600 bg-ink-950" data-player-container="balafon">
+        <div className="relative isolate flex aspect-video flex-col items-center justify-center bg-[radial-gradient(ellipse_at_center,rgba(227,30,36,0.13),transparent_65%)]">
+          <div className="pointer-events-none relative z-0 flex h-16 items-end gap-1.5" aria-hidden>
             {[...Array(9)].map((_, i) => (
               <span
                 key={i}
@@ -30,10 +30,10 @@ export function FakePlayer({
               />
             ))}
           </div>
-          <p className="mt-5 font-display text-[17px] font-extrabold text-paper">{title}</p>
-          {subtitle && <p className="mt-1 text-[12.5px] text-mist">{subtitle}</p>}
+          <p className="relative z-10 mt-5 font-display text-[17px] font-extrabold text-paper">{title}</p>
+          {subtitle && <p className="relative z-10 mt-1 text-[12.5px] text-mist">{subtitle}</p>}
           {live && (
-            <span className="live-pulse mt-4 inline-flex items-center gap-1.5 rounded-md bg-balafon px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-widest text-white">
+            <span className="relative z-10 live-pulse mt-4 inline-flex items-center gap-1.5 rounded-md bg-balafon px-2.5 py-1 text-[10.5px] font-extrabold uppercase tracking-widest text-white">
               <Radio size={11} aria-hidden /> Direct simulé
             </span>
           )}

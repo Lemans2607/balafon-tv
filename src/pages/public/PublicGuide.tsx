@@ -141,7 +141,7 @@ export function PublicGuide() {
             categoryFilter={category === "all" ? null : category}
             gridStatus={grid?.status ?? null}
             onSelectItem={onSelect}
-            heightPx={230}
+            heightPx={620}
           />
           <p className="mt-3.5 text-[11.5px] text-mist-dark">
             Faites glisser la timeline · la ligne <span className="font-bold text-balafon">orange</span> indique l’instant présent ·

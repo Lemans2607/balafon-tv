@@ -31,6 +31,13 @@ interface Props {
   mode: EpgMode;
   now: Date;
   dayStartMin?: number;
+  /** Hauteur fixe en px pour les aperçus compacts (dashboards). Si
+   *  omis, la grille occupe 100% de la hauteur de son conteneur
+   *  parent — c'est le mode « plein écran cinématique » à utiliser
+   *  sur les pages dédiées à la grille (Constructeur EPG, Guide
+   *  public), en donnant au conteneur parent une hauteur définie
+   *  (ex. flex-1 dans une colonne flex sur toute la hauteur du
+   *  viewport). */
   heightPx?: number;
   showControls?: boolean;
   gridStatus?: GridStatus | null;
@@ -57,7 +64,7 @@ export function BalafonEpg({
   mode,
   now,
   dayStartMin = mode === "admin" ? 360 : 0,
-  heightPx = 224,
+  heightPx,
   showControls = true,
   gridStatus = null,
   categoryFilter = null,
@@ -75,17 +82,25 @@ export function BalafonEpg({
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
+  /* Si heightPx n'est pas fourni, on mesure la hauteur réelle du
+     conteneur parent (mode plein écran) au lieu d'une valeur figée. */
+  const [measuredHeight, setMeasuredHeight] = useState(0);
+  const fullBleed = heightPx === undefined;
+  const height = heightPx ?? measuredHeight;
   const [dropHover, setDropHover] = useState(false);
 
   useLayoutEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
-    const update = () => setWidth(el.clientWidth);
+    const update = () => {
+      setWidth(el.clientWidth);
+      if (fullBleed) setMeasuredHeight(Math.round(el.clientHeight / 8) * 8);
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [fullBleed]);
 
   /* Données métier → Planby (re-calculées à la minute près) */
   const nowBucket = Math.floor(now.getTime() / 60000);
@@ -126,7 +141,7 @@ export function BalafonEpg({
     channels: BALAFON_CHANNELS,
     startDate,
     endDate,
-    height: heightPx,
+    height: height,
     isSidebar: true,
     isTimeline: true,
     isLine: false,
@@ -249,9 +264,9 @@ export function BalafonEpg({
   }
 
   return (
-    <div className="select-none">
+    <div className={`select-none min-w-0 w-full ${fullBleed ? "flex h-full flex-col" : ""}`}>
       {showControls && (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className={`mb-3 flex flex-wrap items-center gap-2 ${fullBleed ? "shrink-0" : ""}`}>
           <div className="flex items-center overflow-hidden rounded-lg border border-ink-600 bg-ink-800">
             <button
               type="button"
@@ -324,13 +339,13 @@ export function BalafonEpg({
         }
         onDragLeave={onDropProgram ? () => setDropHover(false) : undefined}
         onDrop={onDropProgram ? handleDrop : undefined}
-        className={`epg-surface relative overflow-hidden rounded-xl border transition-colors ${
-          dropHover ? "border-balafon/70 shadow-[0_0_0_3px_rgba(227,30,36,0.2)]" : "border-ink-700"
-        }`}
-        style={{ height: heightPx, background: "#0B0E14" }}
+        className={`epg-surface relative min-w-0 w-full overflow-hidden rounded-xl border transition-colors ${
+          fullBleed ? "min-h-[420px] flex-1" : ""
+        } ${dropHover ? "border-balafon/70 shadow-[0_0_0_3px_rgba(227,30,36,0.2)]" : "border-ink-700"}`}
+        style={{ height: fullBleed ? undefined : heightPx, background: "#0C0C0E" }}
       >
-        {width > 0 && (
-          <Epg key={`${date}-${width}`} {...getEpgProps()}>
+        {height > 0 && (
+          <Epg key={`${date}-${width}-${height}`} {...getEpgProps()}>
             <Layout
               {...getLayoutProps()}
               renderProgram={({ program, isBaseTimeFormat }) => (
