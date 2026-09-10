@@ -11,6 +11,8 @@ class ChaineSerializer(serializers.ModelSerializer):
 
 
 class EmissionSerializer(serializers.ModelSerializer):
+    grille = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Emission
         fields = [
@@ -41,6 +43,11 @@ class GrilleSerializer(serializers.ModelSerializer):
     """Grille détaillée : chaîne imbriquée + émissions + complétude."""
 
     chaine = ChaineSerializer(read_only=True)
+    chaine_id = serializers.PrimaryKeyRelatedField(
+        source="chaine",
+        queryset=Chaine.objects.filter(actif=True),
+        write_only=True,
+    )
     chaine_nom = serializers.CharField(source="chaine.nom", read_only=True)
     emissions = EmissionSerializer(many=True, read_only=True)
     est_complete = serializers.BooleanField(read_only=True)
@@ -50,6 +57,7 @@ class GrilleSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "chaine",
+            "chaine_id",
             "chaine_nom",
             "date_debut",
             "date_fin",

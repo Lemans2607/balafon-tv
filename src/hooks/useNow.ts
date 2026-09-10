@@ -62,14 +62,21 @@ export function useCurrentProgram(date: string, now: Date): LiveContext {
     let current: ScheduleItem | null = null;
     let next: ScheduleItem | null = null;
     let previous: ScheduleItem | null = null;
+    let currentIndex = -1;
 
-    for (const it of items) {
+    for (const [index, it] of items.entries()) {
       const s = sinceISO(it);
       const t = tillISO(it);
-      if (nowIso >= s && nowIso < t) current = it;
-      else if (s >= nowIso && !next) next = it;
+      if (nowIso >= s && nowIso < t) {
+        current = it;
+        currentIndex = index;
+      }
       else if (t <= nowIso) previous = it;
     }
+
+    /* Le suivant est toujours le créneau chronologique immédiatement après le direct. */
+    if (currentIndex >= 0) next = items[currentIndex + 1] ?? null;
+    else next = items.find((it) => sinceISO(it) >= nowIso) ?? null;
 
     const upcoming = items
       .filter((it) => sinceISO(it) >= nowIso)

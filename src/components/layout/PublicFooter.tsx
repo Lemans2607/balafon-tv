@@ -57,6 +57,15 @@ const SOCIALS = [
   { label: "LinkedIn", href: "https://www.linkedin.com/company/balafon-media-group", icon: <LinkedInIcon /> },
 ];
 
+const DISTRIBUTION = [
+  { name: "Canal+", channel: "Canal 903", logo: "/logos/canal-plus.svg" },
+  { name: "StarTimes", channel: "Canal 747", logo: "/logos/startimes.svg" },
+  { name: "Creolink", channel: "Canal 301", logo: "/logos/creolink.svg" },
+  { name: "Swecom", channel: "Canal S43", logo: "/logos/swecom.svg" },
+  { name: "TV+", channel: "Canal 36", logo: "/logos/tv-plus.svg" },
+  { name: "Amos 17", channel: "17° Est", logo: "/logos/amos-17.svg" },
+];
+
 export function PublicFooter() {
   return (
     <>
@@ -71,7 +80,7 @@ export function PublicFooter() {
               </span>
             </div>
             <p className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-mist-dark">
-              Balafon Media
+              Balafon <span className="text-balafon">+</span> Guide
             </p>
             <p className="mt-4 max-w-sm text-[13px] leading-relaxed text-mist">
               L’application officielle du Balafon Media Group. Retrouvez Balafon TV en direct, le
@@ -195,6 +204,31 @@ export function PublicFooter() {
             </p>
           </div>
         </div>
+
+        {/* ---------------- Réseaux de diffusion ---------------- */}
+        <section className="border-t border-white/10 px-4 py-8 sm:px-6" aria-labelledby="distribution-title">
+          <div className="mx-auto max-w-7xl">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-balafon">Balafon TV</p>
+                <h2 id="distribution-title" className="font-display mt-1 text-[19px] font-extrabold uppercase text-paper">
+                  Disponible sur les réseaux satellitaires et câblés
+                </h2>
+              </div>
+              <p className="text-[11.5px] text-mist-dark">Retrouvez-nous sur votre opérateur habituel</p>
+            </div>
+            <ul className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+              {DISTRIBUTION.map((network) => (
+                <li key={network.name} className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+                  <img src={network.logo} alt={`Logo ${network.name}`} className="h-14 w-full object-contain px-3 py-2" />
+                  <div className="border-t border-white/10 px-3 py-2 text-center">
+                    <p className="font-mono text-[10.5px] font-bold tabular-nums text-balafon">{network.channel}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
 
         {/* Barre de copyright — plus de widget flottant : marges normales. */}
         <div className="border-t border-white/5 py-5">

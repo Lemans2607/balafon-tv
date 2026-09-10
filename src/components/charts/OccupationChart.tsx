@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
 import { useScheduleStore } from "../../store/scheduleStore";
+import { useThemeStore } from "../../store/themeStore";
 import { CATEGORY_META, type ProgramCategory } from "../../types";
 import { durationLabel, toMinutes } from "../../utils/time";
 
@@ -14,6 +15,7 @@ export function OccupationChart() {
   const grids = useScheduleStore((s) => s.grids);
   const scheduleMap = useScheduleStore((s) => s.scheduleMap);
   const programs = useScheduleStore((s) => s.programs);
+  const light = useThemeStore((s) => s.theme === "light");
 
   const { data, total } = useMemo(() => {
     const parId = new Map(programs.map((p) => [p.id, p]));
@@ -59,12 +61,14 @@ export function OccupationChart() {
           <PieChart>
             <Tooltip
               contentStyle={{
-                background: "#121724",
-                border: "1px solid #2b3345",
+                background: light ? "#ffffff" : "#121724",
+                border: `1px solid ${light ? "#e2e5ec" : "#2b3345"}`,
                 borderRadius: 10,
                 fontSize: 12,
-                color: "#f7f8fa",
+                color: light ? "#131822" : "#f7f8fa",
               }}
+              labelStyle={{ color: light ? "#131822" : "#f7f8fa" }}
+              itemStyle={{ color: light ? "#131822" : "#f7f8fa" }}
               formatter={(v: unknown, _n: unknown, item: { payload?: { nom?: string } }) => [
                 durationLabel(Number(v)),
                 item?.payload?.nom ?? "",
@@ -77,7 +81,7 @@ export function OccupationChart() {
               innerRadius={62}
               outerRadius={92}
               paddingAngle={2}
-              stroke="#0b0e14"
+              stroke={light ? "#ffffff" : "#0b0e14"}
               strokeWidth={2}
               animationDuration={700}
             >

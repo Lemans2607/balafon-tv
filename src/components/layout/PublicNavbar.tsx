@@ -70,9 +70,9 @@ export function PublicNavbar() {
         <Link to="/tv" className="flex items-center gap-2.5" aria-label="Balafon TV — Accueil">
           <img src={BALAFON_LOGO_URI} alt="" className="h-9 w-9 rounded-[9px]" aria-hidden />
           <span className="font-display text-[17px] font-black uppercase leading-none tracking-tight text-paper">
-            Balafon <span className="text-balafon">TV</span>
+            Balafon <span className="text-balafon">+</span> Guide
             <span className="ml-1.5 rounded bg-balafon/15 px-1.5 py-0.5 align-middle text-[10px] font-extrabold tracking-widest text-balafon">
-              +GUIDE
+              TV
             </span>
           </span>
         </Link>

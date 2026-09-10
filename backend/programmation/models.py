@@ -10,8 +10,11 @@ Règles d'intégrité portées par la base ET par la validation applicative :
 from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
+from django.contrib.postgres.constraints import ExclusionConstraint
+from django.contrib.postgres.fields.ranges import RangeOperators
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Value
 
 # Fenêtre d'antenne quotidienne retenue pour le contrôle de complétude.
 DEBUT_ANTENNE = time(6, 0)   # 06:00
@@ -160,6 +163,23 @@ class Emission(models.Model):
         db_table = "programmation_emission"
         verbose_name = "émission"
         ordering = ["heure_debut"]
+        constraints = [
+            ExclusionConstraint(
+                name="emission_no_overlap_same_grille",
+                expressions=[
+                    ("grille", RangeOperators.EQUAL),
+                    (
+                        models.Func(
+                            "heure_debut",
+                            "heure_fin",
+                            Value("[)"),
+                            function="TSTZRANGE",
+                        ),
+                        RangeOperators.OVERLAPS,
+                    ),
+                ],
+            )
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.titre} ({self.heure_debut:%H:%M} – {self.heure_fin:%H:%M})"

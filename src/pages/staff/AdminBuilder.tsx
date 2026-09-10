@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AlertTriangle, GripVertical, Search, Send, ShieldAlert, Upload } from "lucide-react";
+import { AlertTriangle, CalendarDays, Clock3, Database, GripVertical, Search, Send, ShieldAlert, Upload } from "lucide-react";
 import { useAppStore } from "../../store/appStore";
 import { useAuth } from "../../context/AuthContext";
 import { useScheduleStore } from "../../store/scheduleStore";
@@ -17,6 +17,8 @@ import { CATEGORY_META, STATUS_META, type Program, type ScheduleItem } from "../
 import { ADMIN_DAY_START, DAY_END, durationLabel, toHHMM, toMinutes } from "../../utils/time";
 import { validateGridForPublish } from "../../utils/validation";
 import { USERS } from "../../data/schedules";
+import { backendConfigure } from "../../api/client";
+import { enregistrerEmissionPlanifiee } from "../../api/grille";
 
 /* ============================================================
    ADMIN — Constructeur de grille EPG
@@ -31,6 +33,7 @@ export function AdminBuilder() {
   const programs = useScheduleStore((s) => s.programs);
   const scheduleMap = useScheduleStore((s) => s.scheduleMap);
   const grids = useScheduleStore((s) => s.grids);
+  const dataSource = useScheduleStore((s) => s.source);
   const addScheduleItem = useScheduleStore((s) => s.addScheduleItem);
   const removeScheduleItem = useScheduleStore((s) => s.removeScheduleItem);
   const setGridStatus = useScheduleStore((s) => s.setGridStatus);
@@ -87,8 +90,23 @@ export function AdminBuilder() {
   };
 
   const applyAdd = (programId: string, startMin: number, silentCritical = false) => {
-    const res = addScheduleItem({ programId, date: selectedDate, startMin, user: user.name, role: "directeur" });
     const program = programs.find((p) => p.id === programId);
+    const endMin = startMin + (program?.durationMinutes ?? 0);
+    const collision = items.find((item) => {
+      const itemStart = toMinutes(item.startTime);
+      const itemEnd = toMinutes(item.endTime);
+      return startMin < itemEnd && itemStart < endMin;
+    });
+    if (collision) {
+      const collisionProgram = programs.find((p) => p.id === collision.programId);
+      toast({
+        title: "Dépôt refusé",
+        message: `Impossible de planifier ici : chevauchement avec ${collisionProgram?.title ?? "un programme existant"}.`,
+        tone: "error",
+      });
+      return null;
+    }
+    const res = addScheduleItem({ programId, date: selectedDate, startMin, user: user.name, role: "directeur" });
     if (!res.ok) {
       toast({ title: "Dépôt refusé", message: res.error, tone: "error" });
       return null;
@@ -105,6 +123,25 @@ export function AdminBuilder() {
             toast({ title: "Ajout annulé", message: `« ${program?.title} » a été retiré de la grille.`, tone: "info" });
           },
         },
+      });
+    }
+    if (backendConfigure() && res.item && program) {
+      void enregistrerEmissionPlanifiee({
+        date: selectedDate,
+        startTime: res.item.startTime,
+        endTime: res.item.endTime,
+        title: program.title,
+        description: program.description,
+        category: program.category,
+        posterUrl: program.posterUrl,
+        fiabilite: program.fiabilite,
+      }).catch((error: unknown) => {
+        console.error("[BALAFON + GUIDE] Échec de sauvegarde backend :", error);
+        toast({
+          title: "Sauvegarde backend échouée",
+          message: "La grille reste visible localement. Vérifiez la connexion et vos droits Django.",
+          tone: "error",
+        });
       });
     }
     return res.item!;
@@ -176,12 +213,9 @@ export function AdminBuilder() {
     });
     sendChange(`${title} (${item.startTime}–${item.endTime}, ${selectedDate})`);
     addLog({
-      user: user.name,
-      role: "directeur",
+      acteur: "directeur",
       action: "Modification critique de grille validée",
-      details: `${title} — grille du ${selectedDate}. Alerte transmise à la Régie et à vMix.`,
-      severity: "critical",
-      date: selectedDate,
+      ts: Date.now(),
     });
     toast({
       title: "Modification en attente d’acquittement",
@@ -212,10 +246,40 @@ export function AdminBuilder() {
   const statusMeta = STATUS_META[gridStatus];
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[300px_1fr]">
+    <div className="space-y-5">
+      <header className="flex flex-col gap-3 border-b border-ink-700 pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="font-mono text-[10.5px] font-bold uppercase tracking-[0.22em] text-balafon">Balafon Studio · Direction</p>
+          <h1 className="font-display mt-1 text-2xl font-extrabold uppercase text-paper">Créer et programmer une grille</h1>
+          <p className="mt-1 text-[12.5px] text-mist">Glissez une émission de la bibliothèque vers la timeline, puis publiez la grille.</p>
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-mist-dark">
+          <span className="h-2 w-2 rounded-full bg-studio" aria-hidden />
+          Constructeur EPG actif
+        </div>
+      </header>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Contexte de la grille">
+        <AdminContextCard icon={<CalendarDays size={15} />} label="Date en édition" value={selectedDate} accent="#E31E24" />
+        <AdminContextCard icon={<Clock3 size={15} />} label="Fenêtre antenne" value="06:00 → 24:00" accent="#0F6BD6" />
+        <AdminContextCard
+          icon={<Database size={15} />}
+          label="Source des données"
+          value={dataSource === "api" ? "API Django" : "Mode démonstration"}
+          accent={dataSource === "api" ? "#00F5A0" : "#FFB800"}
+        />
+        <AdminContextCard
+          icon={<span className="h-2.5 w-2.5 rounded-full" style={{ background: statusMeta.color }} />}
+          label="Cycle éditorial"
+          value={statusMeta.label}
+          accent={statusMeta.color}
+        />
+      </section>
+
+      <div className="grid min-h-0 gap-6 xl:grid-cols-[300px_1fr]">
       {/* ================= BIBLIOTHÈQUE DRAGGABLE ================= */}
-      <aside className="order-2 xl:order-1">
-        <div className="rounded-2xl border border-ink-700 bg-ink-800/70 p-4 xl:sticky xl:top-20">
+      <aside className="order-2 overflow-y-auto xl:order-1">
+        <div className="rounded-2xl border border-ink-700 bg-ink-800/70 p-4 xl:sticky xl:top-0">
           <h2 className="font-display text-[15px] font-extrabold text-paper">Bibliothèque des programmes</h2>
           <p className="mt-1 text-[11.5px] text-mist-dark">Glissez une carte vers un créneau de la timeline, ou cliquez sur un trou.</p>
 
@@ -253,26 +317,26 @@ export function AdminBuilder() {
       </aside>
 
       {/* ================= TIMELINE + CONTRÔLES ================= */}
-      <section className="order-1 min-w-0 xl:order-2">
-        <GrilleCalendar value={selectedDate} onChange={setSelectedDate} />
-        <div className="mt-4">
-          <DaySelector value={selectedDate} onChange={setSelectedDate} startOffset={0} days={7} />
-        </div>
+      <section className="order-1 flex min-h-0 min-w-0 flex-col xl:order-2">
+        <div className="shrink-0">
+          <div className="mt-4">
+            <DaySelector value={selectedDate} onChange={setSelectedDate} startOffset={0} days={7} />
+          </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Badge color={statusMeta.color} soft={statusMeta.soft} className="px-2.5 py-1 text-[11px]">
-            {statusMeta.label}
-          </Badge>
-          <span
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-extrabold ${
-              verdict.gaps.length > 0 ? "border-crit/50 bg-crit/10 text-crit" : "border-studio/50 bg-studio/10 text-studio"
-            }`}
-            role="status"
-          >
-            {verdict.gaps.length > 0 ? <AlertTriangle size={13} aria-hidden /> : null}
-            {gapLabel} · couverture {verdict.coverage} %
-          </span>
-          {grid && (
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Badge color={statusMeta.color} soft={statusMeta.soft} className="px-2.5 py-1 text-[11px]">
+              {statusMeta.label}
+            </Badge>
+            <span
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-extrabold ${
+                verdict.gaps.length > 0 ? "border-crit/50 bg-crit/10 text-crit" : "border-studio/50 bg-studio/10 text-studio"
+              }`}
+              role="status"
+            >
+              {verdict.gaps.length > 0 ? <AlertTriangle size={13} aria-hidden /> : null}
+              {gapLabel} · couverture {verdict.coverage} %
+            </span>
+            {grid && (
             <span className="text-[11px] text-mist-dark">
               Auteur : {grid.author} · modifiée {grid.updatedAt.slice(0, 16).replace("T", " à ")}
             </span>
@@ -291,24 +355,25 @@ export function AdminBuilder() {
             </Button>
           </div>
         </div>
-        {!verdict.ok && (
-          <ul className="mt-3 space-y-1 rounded-xl border border-crit/30 bg-crit/5 p-3">
-            {verdict.reasons.map((r) => (
-              <li key={r} className="flex items-start gap-2 text-[12px] font-semibold text-crit/90">
-                <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden /> {r}
-              </li>
-            ))}
-          </ul>
-        )}
+        </div>
+        <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+          {!verdict.ok && (
+            <ul className="space-y-1 rounded-xl border border-crit/30 bg-crit/5 p-3">
+              {verdict.reasons.map((r) => (
+                <li key={r} className="flex items-start gap-2 text-[12px] font-semibold text-crit/90">
+                  <AlertTriangle size={12} className="mt-0.5 shrink-0" aria-hidden /> {r}
+                </li>
+              ))}
+            </ul>
+          )}
 
-        <div className="mt-4">
           <BalafonEpg
             date={selectedDate}
             mode="admin"
             now={now}
             dayStartMin={ADMIN_DAY_START}
             gridStatus={gridStatus}
-            heightPx={240}
+            heightPx={560}
             onDropProgram={(programId, startMin) => handleProgramDrop({ programId, targetTime: startMin })}
             onRemoveItem={handleRemove}
             onMissingClick={(d) =>
@@ -320,28 +385,38 @@ export function AdminBuilder() {
             }
             onSelectItem={(d) => navigate(`/tv/program/${d.programId}`)}
           />
-        </div>
 
-        {verdict.gaps.length > 0 && (
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            {verdict.gaps.map((g) => (
-              <button
-                key={g.id}
-                type="button"
-                onClick={() => setPicker({ open: true, startMin: toMinutes(g.startTime), endMin: toMinutes(g.endTime) })}
-                className="hatch-red flex items-center justify-between rounded-xl border border-crit/60 px-4 py-3 text-left transition-colors hover:border-crit"
-              >
-                <span>
-                  <span className="block text-[12.5px] font-extrabold text-crit">Programme manquant</span>
-                  <span className="font-mono text-[11.5px] text-crit/80">
-                    {g.startTime} – {g.endTime} · {durationLabel(g.durationMinutes)}
+          {verdict.gaps.length > 0 && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {verdict.gaps.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setPicker({ open: true, startMin: toMinutes(g.startTime), endMin: toMinutes(g.endTime) })}
+                  className="hatch-red flex items-center justify-between rounded-xl border border-crit/60 px-4 py-3 text-left transition-colors hover:border-crit"
+                >
+                  <span>
+                    <span className="block text-[12.5px] font-extrabold text-crit">Programme manquant</span>
+                    <span className="font-mono text-[11.5px] text-crit/80">
+                      {g.startTime} – {g.endTime} · {durationLabel(g.durationMinutes)}
+                    </span>
                   </span>
-                </span>
-                <span className="rounded-md bg-crit/15 px-2 py-1 text-[11px] font-bold text-crit">Compléter</span>
-              </button>
-            ))}
-          </div>
-        )}
+                  <span className="rounded-md bg-crit/15 px-2 py-1 text-[11px] font-bold text-crit">Compléter</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+      </div>
+
+      <section className="mt-6" aria-label="Calendrier des grilles">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <CalendarDays size={16} className="text-balafon" aria-hidden />
+          <h2 className="font-display text-lg font-extrabold uppercase text-paper">Calendrier des grilles</h2>
+          <span className="font-mono text-[11px] text-mist-dark">Sélectionnez une date à programmer</span>
+        </div>
+        <GrilleCalendar value={selectedDate} onChange={setSelectedDate} />
       </section>
 
       {/* ================= MODALE CRITIQUE ================= */}
@@ -419,7 +494,31 @@ function Field({ label, value, accent }: { label: string; value: string; accent?
   return (
     <div className="rounded-lg border border-ink-600 bg-ink-900 px-3 py-2">
       <dt className="text-[10px] font-extrabold uppercase tracking-widest text-mist-dark">{label}</dt>
-      <dd className="mt-0.5 truncate font-semibold" style={{ color: accent ?? "#F7F8FA" }}>{value}</dd>
+      <dd className="mt-0.5 truncate font-semibold" style={{ color: accent ?? "var(--color-paper)" }}>{value}</dd>
+    </div>
+  );
+}
+
+function AdminContextCard({
+  icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  accent: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-ink-700 bg-ink-800/60 px-3.5 py-3">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" style={{ color: accent, background: `${accent}18` }}>
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[9.5px] font-extrabold uppercase tracking-[0.15em] text-mist-dark">{label}</span>
+        <span className="mt-0.5 block truncate font-mono text-[12px] font-bold text-paper">{value}</span>
+      </span>
     </div>
   );
 }
@@ -430,9 +529,13 @@ function LibraryCard({ program }: { program: Program }) {
     <motion.li
       draggable
       onDragStart={(e) => {
-        const ev = e as unknown as React.DragEvent;
-        ev.dataTransfer.setData("text/balafon-program", program.id);
-        ev.dataTransfer.effectAllowed = "copy";
+        const dragEvent = e as unknown as React.DragEvent<HTMLLIElement>;
+        dragEvent.dataTransfer.setData(
+          "text/plain",
+          JSON.stringify({ emissionId: program.id, dureeMinutes: program.durationMinutes })
+        );
+        dragEvent.dataTransfer.setData("text/balafon-program", program.id);
+        dragEvent.dataTransfer.effectAllowed = "move";
       }}
       whileHover={{ y: -2 }}
       className="flex cursor-grab items-center gap-2.5 rounded-xl border border-ink-600 bg-ink-900 p-2.5 transition-colors hover:border-balafon/50 active:cursor-grabbing"

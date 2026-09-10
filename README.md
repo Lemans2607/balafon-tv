@@ -1,166 +1,96 @@
-# BALAFON + GUIDE — Balafon TV
+# Balafon + Guide — Balafon Media Group
 
-Plateforme de programmation TV pour **Balafon Media Group** (Cameroun) : portail public
-(EPG, direct, replay) + back-office **Balafon Studio** (construction de grille, validation
-éditoriale, régie de diffusion, synchronisation vMix simulée).
-
-> Portail public dédié **exclusivement à Balafon TV** — aucune radio.
-
-## Données de démonstration — émissions réelles de Balafon TV
-
-Les grilles ne sont plus fictives : elles sont **générées depuis le catalogue réel des
-émissions** (`src/data/emissions_reelles_balafon_tv.json` — C'le Matin, Faut Pas Zapper,
-Femme au Contrôle, Les Meufs, Top 25 Hit-Parade, C'le Weekend, Grand Plateau, Entretien,
-Moment de Sports, Télé-Zoom, Grand Déballage, Télémarché, Séries Cultes).
-
-- `src/utils/planbyAdapter.ts` fournit les deux voies d'alimentation de l'EPG :
-  - `depuisApiBackend(grilles)` → format Planby depuis l'API Django/DRF (usage réel à venir) ;
-  - `depuisCatalogueDemo(catalogue, slug, nom, lundi)` → format Planby depuis le catalogue JSON
-    (c'est cette voie qui alimente le seeding actuel via `src/data/schedules.ts`).
-- Chaque émission porte un champ `fiabilite` : `"confirme"` (horaire rapporté par
-  balafon.media / presse, source citée dans le JSON) ou `"estime"` (émission réelle, horaire
-    hypothétique pour la démo — signalé par un badge doré sur la fiche émission).
-- Les jours de la semaine sont peuplés selon les jours de diffusion réels ; les vides sont
-    comblés par des blocs de continuité (Rediffusion / Balafon Clips) et le hors antenne
-    00:00–06:00. **Une journée (J+2) est volontairement laissée incomplète** pour démontrer la
-    détection de trous et le déblocage de la publication par drag & drop.
-- Seul le slug `balafon-tv` est diffusé sur ce portail (pas de radio).
-- Sources : https://balafon.media/balafon-tv/ et https://lejour.cm (lancement de grille du
-  01/07/2024). La grille de production doit être demandée à jour à la régie pour remplacer les
-  entrées « estimées ».
+Portail TV public + studio de gestion d'antenne (EPG, validation éditoriale,
+régie de diffusion) pour **Balafon TV**. React + TypeScript + Vite + Tailwind,
+état persistant (localStorage) et synchronisation temps réel entre onglets
+(BroadcastChannel).
 
 ## Lancement
 
 ```bash
 npm install
-npm run dev        # développement
-npm run build      # build de production
-npm run preview    # prévisualisation du build
+npm run dev
+npm run build
+npm run preview
 ```
 
-## Stack
+## Routes
 
-React 19 · TypeScript · Vite 6 · Tailwind CSS v4 · Zustand (persistance localStorage) ·
-date-fns · Framer Motion · Lucide · React Router (HashRouter) · **Planby 2.1.0** (moteur EPG).
-
-## Architecture
-
-```
-src/
-  components/planby/    moteur EPG Planby personnalisé (thème, mappers, rendus)
-  components/ui/        primitives (Button, Modal, Drawer, Toast, DaySelector, SimClock…)
-  components/layout/    PublicNavbar/Footer, StaffShell (sidebar/topbar)
-  components/alerts/    AlertCard
-  components/media/     ProgramPoster, FakePlayer
-  pages/public/         PublicHome, PublicGuide, PublicReplay, ProgramDetails
-  pages/staff/          StudioDashboard, AdminBuilder, DirecteurKanban(+GridsPage),
-                        RegieControl, ProgramLibrary, AlertCenter, GridHistory, SettingsPage
-  store/                appStore, scheduleStore (source demo|api + hydrateFromApi), alertStore, vmixStore
-  services/             backend.ts (REST Django + fallback démo), realtime.ts (WebSocket Channels)
-  hooks/                useNow (horloge simulée), useCurrentProgram, usePlayheadX, useMediaQuery
-backend/                scaffold Django : docker-compose, settings, charger_emissions_demo, verifier_bdd
-  data/                 emissions_reelles_balafon_tv.json + programmes + grilles générées (7 jours)
-  utils/                time.ts, validation.ts, planbyAdapter.ts (API Django ↔ Planby, catalogue ↔ Planby)
-  types/                types métier + métadonnées sémantiques
-```
-
-## Rôles & routes
-
-**Deux rôles métier** : le **Directeur d'Antenne** est l'administrateur de la plateforme
-(construction des grilles, gestion des comptes, validation éditoriale exclusive) ; le
-**Diffuseur** (régie) consulte en lecture seule, acquitte les alertes et synchronise vMix.
-Le rôle « admin antenne » séparé n'existe pas.
-
-| Route | Accès |
+| Route | Écran |
 |---|---|
-| `/demo` | Sélecteur d'espace (changement de rôle sans rechargement) |
-| `/login` | Connexion JWT (mode API) ou accès démo |
-| `/tv`, `/tv/guide`, `/tv/replay`, `/tv/program/:id` | Portail public |
-| `/studio` | Pilotage (Direction + Régie) |
-| `/studio/admin` | Constructeur EPG — Direction d'Antenne (drag & drop, complétude, soumission, export CSV/PDF) |
-| `/studio/directeur` | Kanban de validation éditoriale + analyse d'occupation |
-| `/studio/comptes` | Comptes & équipe — Direction d'Antenne uniquement |
-| `/studio/regie` | Poste de diffusion (PGM/PVW, Gantt, plein écran, alertes, vMix) |
-| `/studio/programmes` `/studio/grilles` `/studio/alertes` `/studio/historique` `/studio/parametres` | Studio |
+| `/` · `/tv` | Portail public — Boulevard du Direct, rails, replay |
+| `/guide` · `/tv/guide` | Guide TV public (EPG à la minute, hors antenne explicite) |
+| `/login` · `/demo` | Authentification + choix du rôle |
+| `/studio` | Tableau de bord (selon rôle actif) |
+| `/studio/grilles` | Constructeur EPG (Admin) — drag & drop, contrôle de complétude |
+| `/studio/directeur` | Kanban de validation éditoriale |
+| `/studio/regie` | Mission control live — playhead, alertes, vMix simulé |
+| `/studio/comptes` | Comptes back-office (API) — espace Directeur/Admin |
 
-## Intégration Planby — audit
+Comptes démo (mot de passe libre) : `admin@balafon.cm`, `direction@balafon.cm`,
+`regie@balafon.cm`.
 
-- **Package utilisé : `planby@2.1.0`** (`npm install planby`). Le namespace `@nessprim/planby`
-  n’existe pas dans le registry utilisé ; `planby@2.x` exige React ≥ 19 → le projet a été migré
-  de React 18.3 vers React 19 (`react`, `react-dom`, `@types/react`, `@types/react-dom`) et
-  `lucide-react` a été mis à jour (≥ 0.469) pour la compatibilité.
-- **Fonctionnalités Planby réellement utilisées** : `useEpg`, `Epg`, `Layout`,
-  `renderProgram` / `renderChannel` / `renderTimeline`, `useProgram`, `useTimeline`,
-  `ProgramBox`, `ProgramContent`, `ChannelBox`, `ChannelLogo`, `TimelineWrapper/Box/Time/Divider(s)`,
-  `onScrollLeft` / `onScrollRight`, thème `Theme` complet, virtualisation interne
-  (`isProgramVisible`), timeline 06:00→24:00 (admin) et 00:00→24:00 (public).
-- **Adaptations vérifiées dans les types de la 2.1.0** :
-  - `useProgram({ program, isBaseTimeFormat })` et `useTimeline(n, isBaseTimeFormat)` prennent
-    des arguments explicites (plus de contexte implicite).
-  - Le `ProgramItem` exporté est le type des props de rendu ; le type de l’élément positionné
-    `{ position, data }` est redéfini structurellement (`BalafonProgramItem`).
-  - `ChannelBox` attend `{ top, height }`.
-- **Limitations de la version libre et fallbacks propres** :
-  - **Drag & Drop** : absent de Planby libre → fallback HTML5 natif au-dessus du conteneur
-    Planby (`handleProgramDrop`), conversion du point de dépôt en heure via `hourWidth`,
-    `sidebarWidth` et le scroll interne (`[data-testid="content"]`), snap 30 min.
-  - **Playhead** : la ligne native est verte et liée à l’heure réelle → `isLine: false` +
-    playhead rouge Balafon superposé, synchronisé sur l’**heure simulée** (`usePlayheadX`).
-  - **« Aller à maintenant »** : `onScrollToNow` natif ne fonctionne que sur le jour réel ;
-    scroll custom calculé depuis l’heure simulée (avec repli sur l’API native).
-  - Les règles métier (trous, chevauchements, complétude, publication, rôles, historique,
-    alertes, vMix) sont **hors Planby** : `utils/validation.ts`, stores et services.
+## Changements appliqués (état courant)
 
-## Fonctionnalités fonctionnelles (état local persisté)
+**Thème global**
+- Thème **clair par défaut** ; les anciennes préférences sombres sont migrées
+  automatiquement (`themeStore.ts`). Bascule clair/sombre dans la topbar Studio
+  et le Guide TV. L'EPG et les panneaux suivent le thème (`planbyTheme.ts` :
+  `planbyTheme` / `planbyThemeLight`) ; le portail public reste cinématographique
+  (noir `#050505`).
 
-- Portail public : direct calculé en continu, rail « En ce moment », guide EPG 7 jours,
-  filtres par catégorie, playhead, hors antenne/rediffusion, recherche, replay, fiches émission.
-- Admin : drag & drop bibliothèque → timeline, refus de chevauchement et de dépassement de
-  00:00, détection de trous (hachures rouges), bouton **Publier** désactivé tant que la grille
-  est incomplète ou non validée, soumission au Directeur, modale rouge sur modification d’une
-  grille validée (alerte critique Régie + journal + vMix).
-- Directeur : Kanban Brouillons / En attente / Validées, validation (→ portail public),
-  refus, alerte info Régie, journal d’audit.
-- Régie : EPG lecture seule, précédent/en cours/suivant, acquittement d’alertes (historique
-  conservé), synchronisation vMix **simulée**, simulation de modification.
-- Horloge de démonstration persistée (décalage ±8 h) partagée par tous les modules.
+**Authentification & comptes**
+- Tous les domaines email valides sont acceptés (`utils/validators.ts`).
+- Les comptes sont chargés via un service dédié simulant l'API Django
+  `GET /api/auth/comptes/` (`services/auth.ts`), affichés dans
+  `/studio/comptes` (espace Directeur d'Antenne, gestion réservée à l'Admin).
+- Les rôles Django (`admin`, `directeur_antenne`, `regie_diffusion`,
+  `technicien`) sont convertis vers les rôles Studio via
+  `convertirRoleDjango()`.
 
-## Fonctionnalités simulées
+**Constructeur de grille (`/studio/grilles`)**
+- `Créer une grille` visible dans le Tableau de bord (ouvre directement la
+  modale via `?nouvelle=1` ; `?grille=<id>` sélectionne une grille).
+- Bibliothèque à gauche (recherche + filtres catégorie), timeline 24h à droite.
+- Le calendrier est placé **sous la grille** pour libérer l'espace principal.
+- L'horloge de démonstration ne figure plus sur cette page.
 
-Flux vidéo (lecteur factice), liaison vMix (statuts, journal, synchro), notifications
-« temps réel » (état local). Rien n’est émis vers un serveur.
+**Drag & drop EPG**
+- Payload standard `text/plain` : JSON `{ emissionId, dureeMinutes }`
+  (`encoderProgramme` / `decoderProgramme`), avec compatibilité de l'ancien
+  format `text/balafon-program`. Magnétisme 30 min, ghost de survol vert/rouge,
+  chevauchements refusés (toast), limite 24:00 respectée.
 
-## Intégration backend Django (dès maintenant)
+**Horloge & logique temporelle (`hooks/useNow.ts`)**
+- L'horloge de démonstration est réservée à la Régie (presets 06:15 / 13:30 /
+  **18:00** / 20:45 / 23:45 + retour temps réel) ; retirée du portail public,
+  du Tableau de bord et des Paramètres.
+- Le programme « Ensuite » est déterministe : toujours le créneau
+  immédiatement suivant dans la grille.
 
-Le frontend est **déjà câblé** sur le contrat d’API du guide d’intégration — il bascule
-automatiquement entre les deux modes, sans écran vide :
+**Logo & favicon**
+- Favicon : **B blanc sur fond Balafon Red** (`public/favicon.svg`).
+- Branding **Balafon + Guide** partagé (navbar, Studio, footer, connexion,
+  EPG) ; plus de wordmark « Balafon Media » dans les en-têtes.
 
-| Mode | Condition | Source des grilles |
-|---|---|---|
-| **Démo locale** | `VITE_API_URL` vide ou backend injoignable | Catalogue embarqué + localStorage |
-| **API Django** | `GET {VITE_API_URL}/grilles/?statut=validee` répond | Hydratation via `depuisApiBackend` (adaptateur Planby) |
+**Footer public**
+- Zone dédiée aux **réseaux de diffusion de Balafon TV** avec logos locaux :
+  Canal+ (903), StarTimes (747), Creolink (301), Swecom (S43), TV+ (36),
+  Amos 17 (17° Est) — `components/PublicFooter.tsx`.
 
-- `src/services/backend.ts` — client REST (grilles, chaînes, JWT) avec timeout et fallback.
-- `src/services/realtime.ts` — WebSocket Django Channels (`VITE_WS_URL`) : les alertes reçues
-  sont injectées dans l’alertStore (acquittement en Régie, historique tracé).
-- Badge « Démo locale / API Django » dans la topbar Studio + test de connexion live dans
-  **Studio → Paramètres** (latence, nombre de grilles, hydratation en un clic).
+**Protection visuelle**
+- Couches `z-index` explicites sur le lecteur simulé du hero ; overlays
+  décoratifs en `pointer-events-none` ; hauteur minimale du conteneur EPG
+  (`min-h-[150px]`) pour limiter les soucis d'affichage liés aux extensions
+  navigateur.
 
-### Scaffold backend fourni (`backend/`)
+## Vers la production
 
-- `docker-compose.yml` — PostgreSQL 16 + Redis 7 (channel layer).
-- `config/settings_bdd.py` — DATABASES, CHANNEL_LAYERS, DRF + SimpleJWT, CORS, Swagger.
-- `comptes/management/commands/verifier_bdd.py` — `python manage.py verifier_bdd`.
-- `programmation/management/commands/charger_emissions_demo.py` — charge les **vraies
-  émissions Balafon TV** (`backend/data/emissions_reelles_balafon_tv.json`) dans la grille
-  de la semaine en cours, fuseau Africa/Douala.
-- Démarrage complet : `backend/README.md` (Phases 1 et 2bis du guide).
-
-## Prochaines étapes (production)
-
-1. **Déployer le backend** : Gunicorn/Daphne + Nginx, SSL, `.env` sécurisé (voir `backend/.env.example`).
-2. **vMix réel** : passer `VMIX_MODE=reel` avec l’URL régie `:8088/API` — la façade
-   `vmixService` (connect/getStatus/sync/sendChange/ack) est déjà alignée sur ce contrat.
-3. **Authentification JWT** en production (écran de login branché sur `POST /api/auth/token/`).
-4. **Fuseau Africa/Douala** strict côté serveur et CDN pour les affiches.
-5. **CI/CD + monitoring** : GitHub Actions, Sentry, alertes Slack.
+- **Backend** : remplacer `services/auth.ts` et le store par l'API Django
+  (PostgreSQL) — les contrats (`/api/auth/comptes/`, grilles, alertes) sont
+  déjà isolés dans `services/` et `state/`.
+- **Temps réel** : le canal BroadcastChannel se remplace par un WebSocket
+  (Django Channels) sans toucher aux vues.
+- **vMix** : `syncVmix()` dans le store est clairement marquée « mode
+  démonstration » ; brancher l'API REST vMix (`localhost:8088/api`) derrière la
+  même signature.

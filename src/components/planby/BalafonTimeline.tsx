@@ -36,7 +36,10 @@ export function BalafonTimeline(props: Props) {
     <TimelineWrapper isSidebar={isSidebar} sidebarWidth={sidebarWidth} dayWidth={dayWidth}>
       {time.map((_, index) => (
         <TimelineBox key={`tl-${index}`} width={hourWidth}>
-          <TimelineTime isBaseTimeFormat={isBaseTimeFormat} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: "#9CA3AF" }}>
+          <TimelineTime
+            isBaseTimeFormat={isBaseTimeFormat}
+            style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: "#B9C0CE" }}
+          >
             {label(index)}
           </TimelineTime>
           <TimelineDividers>

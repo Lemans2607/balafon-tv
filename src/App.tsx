@@ -80,22 +80,22 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   render() {
     if (this.state.error) {
       return (
-        <div className="flex min-h-screen items-center justify-center bg-[#050505] p-6">
-          <div className="w-full max-w-lg rounded-2xl border border-[#EF4444]/40 bg-[#111622] p-8 shadow-[0_24px_60px_rgba(0,0,0,0.55)]">
+        <div className="flex min-h-screen items-center justify-center bg-ink-950 p-6">
+          <div className="w-full max-w-lg rounded-2xl border border-crit/40 bg-ink-850 p-8 shadow-[0_24px_60px_rgba(0,0,0,0.12)]">
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#EF4444]/15">
                 <AlertTriangle size={20} className="text-[#EF4444]" />
               </span>
               <div>
-                <h1 className="font-black uppercase tracking-tight text-[#F7F8FA]">
+                <h1 className="font-black uppercase tracking-tight text-paper">
                   Balafon <span className="text-balafon">+ Guide</span>
                 </h1>
-                <p className="text-[12px] font-semibold text-[#9CA3AF]">
+                <p className="text-[12px] font-semibold text-mist">
                   Une erreur d'affichage est survenue
                 </p>
               </div>
             </div>
-            <pre className="mt-5 max-h-40 overflow-auto rounded-xl border border-[#2A3142] bg-[#0B0E14] p-4 font-mono text-[11.5px] leading-relaxed text-[#EF4444]">
+            <pre className="mt-5 max-h-40 overflow-auto rounded-xl border border-ink-600 bg-ink-900 p-4 font-mono text-[11.5px] leading-relaxed text-crit">
               {this.state.error.message}
             </pre>
             <div className="mt-5 flex gap-2">
@@ -113,7 +113,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
               <button
                 type="button"
                 onClick={() => this.setState({ error: null })}
-                className="rounded-xl border border-[#2A3142] px-5 py-2.5 text-[13px] font-bold text-[#9CA3AF] hover:text-[#F7F8FA]"
+                className="rounded-xl border border-ink-600 px-5 py-2.5 text-[13px] font-bold text-mist hover:text-paper"
               >
                 Réessayer
               </button>
@@ -152,7 +152,7 @@ class PageBoundary extends Component<{ children: ReactNode }, { error: Error | n
       return (
         <div className="rounded-2xl border border-[#EF4444]/40 bg-[#EF4444]/5 p-6">
           <p className="text-[14px] font-extrabold text-[#EF4444]">Cette section a rencontré un problème.</p>
-          <p className="mt-1 font-mono text-[11.5px] text-[#9CA3AF]">{this.state.error.message}</p>
+          <p className="mt-1 font-mono text-[11.5px] text-mist">{this.state.error.message}</p>
           <button
             type="button"
             onClick={() => this.setState({ error: null })}
@@ -277,7 +277,7 @@ function Root() {
             }
           />
           <Route path="directeur" element={page("Validation éditoriale", <DirecteurKanban />)} />
-          <Route path="grilles" element={page("Grilles", <GridsPage />)} />
+          <Route path="grilles" element={page("Constructeur de grille", <AdminBuilder />)} />
           <Route
             path="comptes"
             element={

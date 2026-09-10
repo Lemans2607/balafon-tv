@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   ClipboardCheck,
@@ -7,6 +7,7 @@ import {
   KanbanSquare,
   LayoutDashboard,
   Library,
+  LogOut,
   Menu,
   MonitorPlay,
   Settings,
@@ -17,8 +18,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useAlertStore } from "../../store/alertStore";
-import { useScheduleStore } from "../../store/scheduleStore";
 import { useVmixStore, VMIX_STATUS_META } from "../../store/vmixStore";
+import { useThemeStore } from "../../store/themeStore";
 import { useNow } from "../../hooks/useNow";
 import { formatClock } from "../../utils/time";
 import { USERS } from "../../data/schedules";
@@ -31,12 +32,11 @@ import type { RoleBackend } from "../../api/types";
    il gère les comptes ET les grilles, et seul il valide. */
 const NAV: Array<{ to: string; label: string; icon: React.ReactNode; roles: RoleBackend[]; end?: boolean }> = [
   { to: "/studio", label: "Pilotage", icon: <LayoutDashboard size={16} />, roles: ["directeur_antenne", "diffuseur"], end: true },
-  { to: "/studio/admin", label: "Constructeur EPG", icon: <CalendarRange size={16} />, roles: ["directeur_antenne"] },
+  { to: "/studio/grilles", label: "Grille", icon: <CalendarRange size={16} />, roles: ["directeur_antenne"] },
   { to: "/studio/directeur", label: "Validation éditoriale", icon: <ClipboardCheck size={16} />, roles: ["directeur_antenne"] },
   { to: "/studio/comptes", label: "Comptes & équipe", icon: <Users size={16} />, roles: ["directeur_antenne"] },
   { to: "/studio/regie", label: "Régie · Mission Control", icon: <MonitorPlay size={16} />, roles: ["directeur_antenne", "diffuseur"] },
   { to: "/studio/programmes", label: "Bibliothèque", icon: <Library size={16} />, roles: ["directeur_antenne"] },
-  { to: "/studio/grilles", label: "Grilles", icon: <KanbanSquare size={16} />, roles: ["directeur_antenne"] },
   { to: "/studio/alertes", label: "Alertes", icon: <Bell size={16} />, roles: ["directeur_antenne", "diffuseur"] },
   { to: "/studio/historique", label: "Historique", icon: <History size={16} />, roles: ["directeur_antenne", "diffuseur"] },
   { to: "/studio/parametres", label: "Paramètres", icon: <Settings size={16} />, roles: ["directeur_antenne", "diffuseur"] },
@@ -48,18 +48,25 @@ const ROLE_LABEL: Record<RoleBackend, string> = {
 };
 
 export function StaffShell() {
-  const { role, utilisateur } = useAuth();
+  const { role, utilisateur, logout } = useAuth();
+  const navigate = useNavigate();
   const alerts = useAlertStore((s) => s.alerts);
   const vmixStatus = useVmixStore((s) => s.status);
-  const dataSource = useScheduleStore((s) => s.source);
   const now = useNow(1000);
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const light = useThemeStore((s) => s.theme === "light");
 
   if (!role) {
     /* Accès au Studio uniquement sur connexion réelle (JWT). */
     return <Navigate to="/login" replace />;
   }
+
+  const handleLogout = async () => {
+    setMenuOpen(false);
+    await logout();
+    navigate("/login", { replace: true });
+  };
 
   const cleUser = role === "directeur_antenne" ? "directeur" : "regie";
   const profil = USERS[cleUser] ?? USERS.directeur;
@@ -79,7 +86,7 @@ export function StaffShell() {
         <img src={BALAFON_LOGO_URI} alt="" className="h-9 w-9 rounded-[9px]" aria-hidden />
         <div>
           <p className="font-display text-[15px] font-black uppercase leading-none tracking-tight text-paper">
-            Balafon <span className="text-balafon">Studio</span>
+            Balafon <span className="text-balafon">+</span> Guide
           </p>
           <p className="mt-1 font-mono text-[9.5px] uppercase tracking-[0.2em] text-mist-dark">
             Broadcast Control
@@ -131,6 +138,15 @@ export function StaffShell() {
         </div>
         <div className="mt-3 flex items-center gap-2">
           <ThemeToggle />
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-ink-600 bg-ink-800 px-2.5 py-2 text-[11.5px] font-bold text-mist transition-colors hover:border-crit/40 hover:bg-crit/10 hover:text-crit"
+            aria-label="Se déconnecter"
+          >
+            <LogOut size={13} aria-hidden />
+            Se déconnecter
+          </button>
         </div>
       </div>
     </div>
@@ -160,29 +176,11 @@ export function StaffShell() {
             </h1>
             <span
               className="hidden rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider sm:inline"
-              style={{ background: "rgba(227,30,36,0.16)", color: "#FF8A85" }}
+              style={{ background: light ? "rgba(227,30,36,0.1)" : "rgba(227,30,36,0.16)", color: light ? "#B31217" : "#FF8A85" }}
             >
               {ROLE_LABEL[role]}
             </span>
             <div className="ml-auto flex items-center gap-3">
-              <span
-                className="hidden items-center gap-1.5 rounded-lg border border-ink-600 bg-ink-800 px-2.5 py-1.5 text-[10.5px] font-extrabold uppercase tracking-wide md:flex"
-                style={{
-                  color: dataSource === "api" ? "#00F5A0" : "#9CA3AF",
-                  borderColor: dataSource === "api" ? "rgba(0,245,160,0.35)" : undefined,
-                }}
-                title={
-                  dataSource === "api"
-                    ? "Grilles chargées depuis l’API Django"
-                    : "Mode démo — catalogue embarqué + localStorage"
-                }
-              >
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${dataSource === "api" ? "bg-studio" : "bg-mist-dark"}`}
-                  aria-hidden
-                />
-                {dataSource === "api" ? "API Django" : "Démo locale"}
-              </span>
               <span
                 className="hidden items-center gap-1.5 rounded-lg border border-ink-600 bg-ink-800 px-2.5 py-1.5 text-[11px] font-bold sm:flex"
                 style={{ color: vMeta.color }}
