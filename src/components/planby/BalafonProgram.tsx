@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ProgramBox, ProgramContent, useProgram } from "planby";
 import type { Program as PlanbyProgramType } from "planby";
 import { AlertTriangle, Moon, Play, Repeat, Trash2 } from "lucide-react";
@@ -26,13 +27,14 @@ interface Props {
    États : direct (rouge) · validé (vert) · brouillon (or) ·
    trou (hachuré rouge) · hors antenne · rediffusion.
    ============================================================ */
-export function BalafonProgram({ program, isBaseTimeFormat, mode, onSelect, onRemove, onMissingClick }: Props) {
-  const { styles } = useProgram({ program, isBaseTimeFormat, minWidth: 150 });
-  const data = program.data as unknown as PlanbyEpgData;
-  const width = styles.width;
-  const meta = CATEGORY_META[data.category];
-  const narrow = width < 84;
-  const mid = width < 160;
+export const BalafonProgram = memo(
+  function BalafonProgram({ program, isBaseTimeFormat, mode, onSelect, onRemove, onMissingClick }: Props) {
+    const { styles } = useProgram({ program, isBaseTimeFormat, minWidth: 150 });
+    const data = program.data as unknown as PlanbyEpgData;
+    const width = styles.width;
+    const meta = CATEGORY_META[data.category];
+    const narrow = width < 84;
+    const mid = width < 160;
   const timeLabel = `${formatHM(data.since)} – ${formatHM(data.till)}`;
 
   const clickable = !data.isMissing && Boolean(onSelect);
@@ -213,7 +215,41 @@ export function BalafonProgram({ program, isBaseTimeFormat, mode, onSelect, onRe
       </ProgramContent>
     </ProgramBox>
   );
-}
+  },
+  (prev, next) => {
+    const p1 = prev.program;
+    const p2 = next.program;
+    if (
+      p1.position.left !== p2.position.left ||
+      p1.position.width !== p2.position.width ||
+      p1.position.top !== p2.position.top ||
+      p1.position.height !== p2.position.height
+    ) {
+      return false;
+    }
+    const d1 = p1.data as unknown as PlanbyEpgData;
+    const d2 = p2.data as unknown as PlanbyEpgData;
+    if (
+      d1.id !== d2.id ||
+      d1.isLive !== d2.isLive ||
+      d1.progress !== d2.progress ||
+      d1.title !== d2.title ||
+      d1.description !== d2.description ||
+      d1.category !== d2.category ||
+      d1.isMissing !== d2.isMissing ||
+      d1.gridStatus !== d2.gridStatus
+    ) {
+      return false;
+    }
+    return (
+      prev.isBaseTimeFormat === next.isBaseTimeFormat &&
+      prev.mode === next.mode &&
+      prev.onSelect === next.onSelect &&
+      prev.onRemove === next.onRemove &&
+      prev.onMissingClick === next.onMissingClick
+    );
+  }
+);
 
 function LiveDot({ compact }: { compact?: boolean }) {
   return (

@@ -39,12 +39,17 @@ export function GrilleCalendar({
 
   const aujourdhui = todayKey();
 
-  const infoJour = (key: string) => {
-    const items = (scheduleMap[key] ?? []).filter((i) => i.programId !== "p-offair");
-    const couverture = items.length ? coveragePercent(scheduleMap[key] ?? [], ADMIN_DAY_START, DAY_END) : 0;
-    const statut = grids[key]?.status ?? null;
-    return { couverture, statut, nb: items.length };
-  };
+  const infoJoursMap = useMemo(() => {
+    const map: Record<string, { couverture: number; statut: string | null; nb: number }> = {};
+    for (const d of jours) {
+      const key = dateKey(d);
+      const items = (scheduleMap[key] ?? []).filter((i) => i.programId !== "p-offair");
+      const couverture = items.length ? coveragePercent(scheduleMap[key] ?? [], ADMIN_DAY_START, DAY_END) : 0;
+      const statut = grids[key]?.status ?? null;
+      map[key] = { couverture, statut, nb: items.length };
+    }
+    return map;
+  }, [jours, scheduleMap, grids]);
 
   return (
     <div className="panel p-4">
@@ -93,7 +98,7 @@ export function GrilleCalendar({
         {jours.map((d) => {
           const key = dateKey(d);
           const dansMois = d.getMonth() === mois.getMonth();
-          const { couverture, statut, nb } = infoJour(key);
+          const { couverture, statut, nb } = infoJoursMap[key] ?? { couverture: 0, statut: null, nb: 0 };
           const selectionne = key === value;
           const estAujourdhui = key === aujourdhui;
           const couleurStatut = statut ? STATUS_META[statut].color : "#3a4256";

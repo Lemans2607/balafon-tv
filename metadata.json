@@ -1,0 +1,8 @@
+{
+  "name": "Balafon + Guide",
+  "description": "Balafon + Guide — le portail TV et le studio de gestion d'antenne de Balafon Media Group : grille EPG, validation éditoriale et régie synchronisée vMix.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

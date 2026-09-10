@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   TimelineBox,
   TimelineDivider,
@@ -22,7 +23,7 @@ interface Props {
    Timeline horizontale personnalisée — heures en monospace,
    séparateurs fins, format 24 h (06:00, 07:00 … 23:00, 00:00)
    ============================================================ */
-export function BalafonTimeline(props: Props) {
+export const BalafonTimeline = memo(function BalafonTimeline(props: Props) {
   const { numberOfHoursInDay, offsetStartHoursRange, isBaseTimeFormat, isSidebar, sidebarWidth, hourWidth, dayWidth } =
     props;
   const { time, dividers } = useTimeline(numberOfHoursInDay, isBaseTimeFormat);
@@ -51,4 +52,4 @@ export function BalafonTimeline(props: Props) {
       ))}
     </TimelineWrapper>
   );
-}
+});

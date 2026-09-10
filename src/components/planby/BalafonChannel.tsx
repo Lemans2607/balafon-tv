@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ChannelBox, ChannelLogo } from "planby";
 import type { Channel } from "planby";
 import { BALAFON_LOGO_URI } from "./planbyMappers";
@@ -9,7 +10,7 @@ interface Props {
 /* Rendu personnalisé de la chaîne Balafon TV (unique chaîne du portail),
    dimensionné pour une sidebar large façon Canal+/DSTV (logo net,
    nom en gros, statut de diffusion visible sans compression). */
-export function BalafonChannel({ channel }: Props) {
+export const BalafonChannel = memo(function BalafonChannel({ channel }: Props) {
   return (
     <ChannelBox top={channel.position.top} height={channel.position.height}>
       <div className="flex w-full items-center gap-3.5 px-5 text-left">
@@ -48,4 +49,4 @@ export function BalafonChannel({ channel }: Props) {
       </div>
     </ChannelBox>
   );
-}
+});
