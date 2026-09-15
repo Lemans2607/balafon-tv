@@ -23,6 +23,46 @@ import { USERS } from "../../data/schedules";
    Bibliothèque draggable (HTML5 DnD) → timeline Planby.
    Détection de trous & contrôle de complétude hors Planby.
    ============================================================ */
+
+// Variantes d'animation pour l'entrée des composants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24,
+    },
+  },
+};
+
+const sidebarVariants = {
+  hidden: { opacity: 0, x: -30 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 20,
+      delay: 0.1,
+    },
+  },
+};
+
 export function AdminBuilder() {
   const { role } = useAuth();
   const selectedDate = useAppStore((s) => s.selectedDate);
@@ -212,14 +252,35 @@ export function AdminBuilder() {
   const statusMeta = STATUS_META[gridStatus];
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[300px_1fr]">
+    <motion.div
+      className="grid gap-6 xl:grid-cols-[300px_1fr]"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* ================= BIBLIOTHÈQUE DRAGGABLE ================= */}
-      <aside className="order-2 xl:order-1">
+      <motion.aside
+        className="order-2 xl:order-1"
+        variants={sidebarVariants}
+      >
         <div className="rounded-2xl border border-ink-700 bg-ink-800/70 p-4 xl:sticky xl:top-20">
-          <h2 className="font-display text-[15px] font-extrabold text-paper">Bibliothèque des programmes</h2>
-          <p className="mt-1 text-[11.5px] text-mist-dark">Glissez une carte vers un créneau de la timeline, ou cliquez sur un trou.</p>
+          <motion.h2
+            className="font-display text-[15px] font-extrabold text-paper"
+            variants={itemVariants}
+          >
+            Bibliothèque des programmes
+          </motion.h2>
+          <motion.p
+            className="mt-1 text-[11.5px] text-mist-dark"
+            variants={itemVariants}
+          >
+            Glissez une carte vers un créneau de la timeline, ou cliquez sur un trou.
+          </motion.p>
 
-          <div className="mt-3 flex items-center gap-2 rounded-lg border border-ink-600 bg-ink-900 px-2.5 py-1.5 focus-within:border-balafon/60">
+          <motion.div
+            className="mt-3 flex items-center gap-2 rounded-lg border border-ink-600 bg-ink-900 px-2.5 py-1.5 focus-within:border-balafon/60"
+            variants={itemVariants}
+          >
             <Search size={13} className="text-mist" aria-hidden />
             <input
               value={query}
@@ -228,12 +289,13 @@ export function AdminBuilder() {
               aria-label="Rechercher un programme"
               className="w-full bg-transparent text-[12.5px] text-paper placeholder:text-mist-dark focus:outline-none"
             />
-          </div>
-          <select
+          </motion.div>
+          <motion.select
             value={catFilter}
             onChange={(e) => setCatFilter(e.target.value)}
             aria-label="Filtrer par catégorie"
             className="mt-2 w-full rounded-lg border border-ink-600 bg-ink-900 px-2.5 py-1.5 text-[12px] font-semibold text-mist focus:outline-none"
+            variants={itemVariants}
           >
             <option value="all">Toutes les catégories</option>
             {Object.entries(CATEGORY_META)
@@ -241,7 +303,7 @@ export function AdminBuilder() {
               .map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
               ))}
-          </select>
+          </motion.select>
 
           <ul className="mt-3 max-h-[46vh] space-y-2 overflow-y-auto pr-1 xl:max-h-[52vh]">
             {library.map((p) => (
@@ -250,10 +312,13 @@ export function AdminBuilder() {
             {library.length === 0 && <li className="py-6 text-center text-[12px] text-mist-dark">Aucun résultat.</li>}
           </ul>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* ================= TIMELINE + CONTRÔLES ================= */}
-      <section className="order-1 min-w-0 xl:order-2">
+      <motion.section
+        className="order-1 min-w-0 xl:order-2"
+        variants={itemVariants}
+      >
         <GrilleCalendar value={selectedDate} onChange={setSelectedDate} />
         <div className="mt-4">
           <DaySelector value={selectedDate} onChange={setSelectedDate} startOffset={0} days={7} />
