@@ -3,15 +3,37 @@ Modèles métier — chaînes, grilles de programmes, émissions.
 
 Règles d'intégrité portées par la base ET par la validation applicative :
     - une grille respecte date_fin >= date_debut (contrainte SQL) ;
-    - une émission respecte heure_fin > heure_debut (clean) ;
+    - une émission respecte heure_fin > heure_debut (contrainte SQL + clean) ;
     - deux émissions d'une même grille ne se chevauchent jamais (clean) ;
     - la complétude d'antenne 06:00 → 24:00 est calculable (est_complete).
+
+MODÉLISATION MATHÉMATIQUE DES CONTRAINTES (pour rapport IAI Cameroun) :
+
+1. Coordonnées de dépôt (Drag & Drop) :
+   M = ((X_drop - L_sidebar + X_scroll) / W_hour) × 60
+   
+   où :
+   - L_sidebar : Largeur barre latérale (px)
+   - X_scroll : Défilement horizontal (px)
+   - W_hour : Largeur d'une heure à l'écran (px, constante Planby)
+
+2. Magnétisme (Snap 30 minutes) :
+   M_snap = Round(M / 30) × 30
+
+3. Exclusion d'antenne (Anti-chevauchement) :
+   ∀(s_i, s_j) sur même canal : [Start_i, End_i[ ∩ [Start_j, End_j[ = ∅
+   
+   Cette contrainte est vérifiée :
+   - Au niveau applicatif via clean() dans save()
+   - Au niveau SQL via CheckConstraint (heure_fin > heure_debut)
+   - La non-intersection est garantie par la requête filter() dans clean()
 """
 from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import F, Q
 
 # Fenêtre d'antenne quotidienne retenue pour le contrôle de complétude.
 DEBUT_ANTENNE = time(6, 0)   # 06:00
@@ -90,11 +112,14 @@ class Grille(models.Model):
         Retourne les trous horaires [(heure_debut, heure_fin), ...] sur la
         fenêtre 06:00 → 24:00 de chaque jour couvert par la grille.
         """
+        from django.utils import timezone
+        
         vides = []
         jour = self.date_debut
         while jour <= self.date_fin:
-            debut_jour = datetime.combine(jour, DEBUT_ANTENNE)
-            fin_jour = datetime.combine(jour + timedelta(days=1), FIN_ANTENNE)
+            # Utilisation de timezone pour gérer les datetime aware/naive
+            debut_jour = timezone.make_aware(datetime.combine(jour, DEBUT_ANTENNE))
+            fin_jour = timezone.make_aware(datetime.combine(jour + timedelta(days=1), FIN_ANTENNE))
 
             emissions = sorted(
                 (
@@ -107,9 +132,13 @@ class Grille(models.Model):
 
             curseur = debut_jour
             for emission in emissions:
-                if emission.heure_debut > curseur:
-                    vides.append((curseur, emission.heure_debut))
-                curseur = max(curseur, emission.heure_fin)
+                # S'assurer que les datetime sont comparables (toutes aware)
+                emission_debut = timezone.make_aware(emission.heure_debut) if timezone.is_naive(emission.heure_debut) else emission.heure_debut
+                emission_fin = timezone.make_aware(emission.heure_fin) if timezone.is_naive(emission.heure_fin) else emission.heure_fin
+                
+                if emission_debut > curseur:
+                    vides.append((curseur, emission_debut))
+                curseur = max(curseur, emission_fin)
             if curseur < fin_jour:
                 vides.append((curseur, fin_jour))
 
@@ -160,6 +189,12 @@ class Emission(models.Model):
         db_table = "programmation_emission"
         verbose_name = "émission"
         ordering = ["heure_debut"]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(heure_fin__gt=models.F("heure_debut")),
+                name="emission_heure_fin_apres_debut",
+            )
+        ]
 
     def __str__(self) -> str:  # pragma: no cover
         return f"{self.titre} ({self.heure_debut:%H:%M} – {self.heure_fin:%H:%M})"
