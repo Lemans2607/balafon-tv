@@ -27,6 +27,7 @@ import { connectAlertStream } from "./services/realtime";
    d'écran vide sur les connexions lentes).
    ============================================================ */
 const PublicGuide = lazy(() => import("./pages/public/PublicGuide").then((m) => ({ default: m.PublicGuide })));
+const EPGExperience = lazy(() => import("./pages/public/EPGExperience").then((m) => ({ default: m.EPGExperience })));
 const PublicReplay = lazy(() => import("./pages/public/PublicReplay").then((m) => ({ default: m.PublicReplay })));
 const ProgramDetails = lazy(() => import("./pages/public/ProgramDetails").then((m) => ({ default: m.ProgramDetails })));
 const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default: m.LoginPage })));
@@ -174,7 +175,7 @@ function PublicShell() {
       <main className="flex-1">
         <Routes>
           <Route index element={page("Accueil", <PublicHome />)} />
-          <Route path="guide" element={page("Guide TV", <PublicGuide />)} />
+          <Route path="guide" element={page("Guide TV", <EPGExperience />)} />
           <Route path="replay" element={page("Replay", <PublicReplay />)} />
           <Route path="program/:id" element={page("Programme", <ProgramDetails />)} />
           <Route path="*" element={<Navigate to="/tv" replace />} />

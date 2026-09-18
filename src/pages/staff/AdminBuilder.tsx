@@ -407,7 +407,7 @@ export function AdminBuilder() {
             ))}
           </div>
         )}
-      </section>
+      </motion.section>
 
       {/* ================= MODALE CRITIQUE ================= */}
       <Modal open={pendingDrop !== null || pendingRemove !== null} onClose={() => { setPendingDrop(null); setPendingRemove(null); }} title="Attention : modification d’une grille validée" tone="critical">
@@ -476,7 +476,7 @@ export function AdminBuilder() {
           Seuls les programmes tenant dans le créneau ({durationLabel(picker.endMin - picker.startMin)}) sont proposés.
         </p>
       </Modal>
-    </div>
+    </motion.div>
   );
 }
 
