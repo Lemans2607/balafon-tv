@@ -1,50 +1,26 @@
-```
-# Build artifacts
-dist/
-build/
-*.js
-*.css
-*.svg
-*.html
-
+```gitignore
 # Dependencies
 node_modules/
-venv/
-.venv/
-__pycache__/
+.pnpm-store/
+.npm/
+.yarn/
+.bazel/
+.build/
 
-# Python
-*.pyc
-*.pyo
-*.pyd
-*.py~
-*.pyc
-*.pyo
-__pycache__/
-.Python
-*.so
-.Python
-*.pyc
-*.pyo
-*.pyd
-*.py~
-*.pyc
-*.pyo
-__pycache__/
+# Build outputs
+dist/
+build/
+.out/
+.bundle/
+.deps/
 
-# Migrations
-*.pyc
-__pycache__/
+# TypeScript/JavaScript
+*.tsbuildinfo
+*.js.map
+*.jsx.map
+*.ts.map
 
-# Logs
-*.log
-
-# Environment
-.env
-.env.local
-.env.*
-
-# Editors
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -54,16 +30,63 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
 # Coverage
 coverage/
 htmlcov/
 .coverage
 
-# Testing
-.pytest_cache/
-.mypy_cache/
+# Python (if applicable)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
+.eggs/
 
-# Compressed files
+# Test
+.mypy_cache/
+.pytest_cache/
+.nyc_output/
+coverage/
+
+# Node
+.nuxt/
+.next/
+.vercel/
+.cache/
+
+# Java/Maven/Gradle
+target/
+.gradle/
+*.class
+*.jar
+*.war
+
+# Go
+*.exe
+*.dll
+*.so
+*.dylib
+
+# C/C++
+*.o
+*.a
+*.obj
+*.out
+*.dll
+*.so
+
+# Archives
 *.zip
 *.gz
 *.tar
@@ -82,4 +105,8 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```
