@@ -2,11 +2,19 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { format } from "date-fns";
 import type { AppRole, GridInfo, GridStatus, LogEntry, Program, ScheduleItem } from "../types";
-import { GENRE_TO_CATEGORY, SEED_PROGRAMS } from "../data/programs";
+import {
+  CATEGORY_TO_GENRE,
+  CLIPS_PROGRAM_ID,
+  GENRE_TO_CATEGORY,
+  OFF_AIR_PROGRAM_ID,
+  RERUN_PROGRAM_ID,
+  SEED_PROGRAMS,
+} from "../data/programs";
 import { buildSeedData } from "../data/schedules";
 import {
   dateKey,
   DAY_END,
+  isoFor,
   isoLocal,
   toHHMM,
   toMinutes,
@@ -14,6 +22,8 @@ import {
 } from "../utils/time";
 import { detectOverlaps } from "../utils/validation";
 import type { GrilleAPI } from "../utils/planbyAdapter";
+import { ajouterEmission, supprimerEmission } from "../api/emission";
+import { useAppStore } from "./appStore";
 
 export interface MutationResult {
   ok: boolean;
@@ -33,6 +43,8 @@ interface ScheduleState {
   ensureSeed: () => void;
   resetAll: () => void;
   hydrateFromApi: (grilles: GrilleAPI[]) => void;
+  /** Le backend a répondu « aucune grille validée » : efface réellement l'affichage. */
+  viderGrille: (motif: string) => void;
 
   addScheduleItem: (opts: {
     programId: string;
@@ -124,44 +136,72 @@ export const useScheduleStore = create<ScheduleState>()(
           return "draft";
         };
 
-        const programsBase = [...get().programs];
-        const parTitre = new Map(programsBase.map((p) => [p.title.toLowerCase(), p]));
+        /* ── CORRECTIF ────────────────────────────────────────────────
+           `programsBase` NE PART PLUS de `get().programs`.
+
+           La version précédente faisait `[...get().programs]` puis
+           `.push(...)` : la bibliothèque ne faisait QUE grandir d'un
+           appel à l'autre. Une émission supprimée côté Django restait
+           donc affichée indéfiniment (bibliothèque, filtres, panneau
+           « À suivre »), même après un rechargement, puisque
+           `programs` est persistée dans le localStorage.
+
+           On repart des seules entrées système du catalogue local
+           (hors-antenne, rediffusion, clips) et on reconstruit tout le
+           reste depuis la réponse serveur, qui fait autorité.
+           ──────────────────────────────────────────────────────────── */
+        const idsSysteme = new Set([OFF_AIR_PROGRAM_ID, RERUN_PROGRAM_ID, CLIPS_PROGRAM_ID]);
+        const programsBase: Program[] = SEED_PROGRAMS.filter((p) => idsSysteme.has(p.id));
+        const parCle = new Map(programsBase.map((p) => [p.id, p]));
         const scheduleMap: Record<string, ScheduleItem[]> = {};
         const gridsOut: Record<string, GridInfo> = {};
         let seq = 0;
 
         for (const grille of grilles) {
           const statut = statutNormalise((grille as unknown as { statut?: string }).statut);
+
           for (const emission of grille.emissions ?? []) {
             const debut = new Date(emission.heure_debut);
             const fin = new Date(emission.heure_fin);
             if (Number.isNaN(debut.getTime()) || Number.isNaN(fin.getTime())) continue;
 
-            const titre = emission.titre.trim();
-            let program = parTitre.get(titre.toLowerCase());
+            /* Identité stable côté serveur : le titre seul provoquait des
+               collisions entre deux émissions homonymes de grilles
+               différentes, et empêchait de retrouver un programme après
+               un renommage côté Django. */
+            const cle = `api-emission-${emission.id}`;
+            let program = parCle.get(cle);
+
             if (!program) {
+              const localParTitre = SEED_PROGRAMS.find(
+                (p) => p.title.toLowerCase() === emission.titre.trim().toLowerCase()
+              );
+              const categorie = GENRE_TO_CATEGORY[emission.genre] ?? "entertainment";
               program = {
-                id: `api-${grille.chaine.slug}-${emission.id}`,
-                title: titre,
-                description: emission.description ?? "",
-                category: GENRE_TO_CATEGORY[emission.genre] ?? "entertainment",
+                id: cle,
+                title: emission.titre.trim(),
+                description: emission.description || localParTitre?.description || "",
+                category: categorie,
                 durationMinutes: Math.max(
                   5,
                   Math.round((fin.getTime() - debut.getTime()) / 60000)
                 ),
-                /* Affiche fournie par le backend (image_affiche) — repli local sinon. */
-                posterUrl: emission.image_affiche ?? "",
+                /* Priorité : affiche Django → affiche locale connue → aucune
+                   (ProgramPoster générera un repli visuel dans ce cas). */
+                posterUrl: emission.image_affiche || localParTitre?.posterUrl || "",
+                backdropUrl: localParTitre?.backdropUrl,
+                subtitle: localParTitre?.subtitle,
                 status: "validated",
-                isReplayAvailable: false,
-                tags: [emission.genre],
+                isReplayAvailable: localParTitre?.isReplayAvailable ?? false,
+                tags: localParTitre?.tags ?? [emission.genre],
                 fiabilite: emission.fiabilite ?? "confirme",
               };
-              parTitre.set(titre.toLowerCase(), program);
+              parCle.set(cle, program);
               programsBase.push(program);
             }
 
             const date = dateKey(debut);
-            const item: ScheduleItem = {
+            (scheduleMap[date] ??= []).push({
               id: `api-${grille.id}-${emission.id}-${++seq}`,
               programId: program.id,
               channelId: "balafon-tv",
@@ -172,16 +212,24 @@ export const useScheduleStore = create<ScheduleState>()(
               source: "import",
               lastModifiedBy: "API Django",
               updatedAt: isoLocal(new Date()),
-            };
-            (scheduleMap[date] ??= []).push(item);
+              /* Conservé pour que le Studio puisse écrire vers Django
+                 (PATCH/DELETE) sans re-résoudre l'identifiant serveur. */
+              serverId: Number(emission.id),
+            });
+
             gridsOut[date] = {
               date,
               status: statut,
               author: "API Django",
               updatedAt: isoLocal(new Date()),
               published: statut === "validated",
+              serverId: Number(grille.id),
             };
           }
+        }
+
+        for (const jour of Object.keys(scheduleMap)) {
+          scheduleMap[jour].sort((a, b) => a.startTime.localeCompare(b.startTime));
         }
 
         set({
@@ -197,8 +245,37 @@ export const useScheduleStore = create<ScheduleState>()(
               user: "API Django",
               role: "directeur",
               action: "Hydratation depuis le backend",
-              details: `${Object.keys(scheduleMap).length} jour(s) de grille chargés depuis GET /api/grilles/?statut=validee.`,
+              details: `${Object.keys(scheduleMap).length} jour(s) et ${programsBase.length} émission(s) reçus de GET /api/grilles/?statut=validee.`,
               severity: "info",
+            },
+            ...get().logs,
+          ],
+        });
+      },
+
+      /* ── CORRECTIF ────────────────────────────────────────────────────
+         Le backend a répondu, et il n'a rien : ce n'est pas une panne,
+         c'est l'état réel de la base après suppression de toutes les
+         émissions validées. La version précédente confondait ce cas avec
+         « backend injoignable » et laissait l'ancienne grille affichée.
+         ────────────────────────────────────────────────────────────── */
+      viderGrille: (motif) => {
+        const idsSysteme = new Set([OFF_AIR_PROGRAM_ID, RERUN_PROGRAM_ID, CLIPS_PROGRAM_ID]);
+        set({
+          scheduleMap: {},
+          grids: {},
+          programs: SEED_PROGRAMS.filter((p) => idsSysteme.has(p.id)),
+          source: "api",
+          seededFor: todayKey(),
+          logs: [
+            {
+              id: `log-vide-${Date.now()}`,
+              at: isoLocal(new Date()),
+              user: "API Django",
+              role: "directeur",
+              action: "Grille vidée",
+              details: motif,
+              severity: "warning",
             },
             ...get().logs,
           ],
@@ -270,6 +347,48 @@ export const useScheduleStore = create<ScheduleState>()(
             ...get().logs,
           ],
         });
+
+        /* ── Sens inverse (Studio → Django) ────────────────────────────
+           Cette écriture n'existait pas avant ce correctif : l'ajout ne
+           touchait que ce store local, jamais la base. Elle ne se
+           déclenche que si la journée éditée provient déjà de l'API
+           (grid.serverId défini) : pour une journée purement locale/démo,
+           il n'y a pas encore de Grille Django à laquelle rattacher
+           l'émission, et le comportement reste local comme avant — voir
+           MODIFICATIONS.md pour la portée exacte de ce correctif. */
+        if (grid.serverId) {
+          const genre = CATEGORY_TO_GENRE[program.category] ?? "autre";
+          void ajouterEmission(grid.serverId, {
+            titre: program.title,
+            genre,
+            description: program.description,
+            heure_debut: isoFor(date, startMin),
+            heure_fin: isoFor(date, endMin),
+            image_affiche: program.posterUrl || null,
+            fiabilite: program.fiabilite ?? "estime",
+          })
+            .then((creee) => {
+              // Aligne l'identifiant serveur pour qu'un retrait immédiat
+              // puisse cibler DELETE /api/emissions/{id}/ sans attendre le
+              // prochain rafraîchissement de useGrilleQuery.
+              set({
+                scheduleMap: {
+                  ...get().scheduleMap,
+                  [date]: (get().scheduleMap[date] ?? []).map((it) =>
+                    it.id === candidate.id ? { ...it, serverId: creee.id } : it
+                  ),
+                },
+              });
+            })
+            .catch((err) => {
+              useAppStore.getState().toast({
+                title: "Écriture Django refusée",
+                message: `« ${program.title} » a été ajouté localement mais pas dans la base : ${String(err)}.`,
+                tone: "warning",
+              });
+            });
+        }
+
         return { ok: true, item: candidate };
       },
 
@@ -295,6 +414,21 @@ export const useScheduleStore = create<ScheduleState>()(
             ...get().logs,
           ],
         });
+
+        /* ── Sens inverse (Studio → Django) ────────────────────────────
+           `target.serverId` n'existe que pour les créneaux hydratés
+           depuis l'API (voir hydrateFromApi) : un retrait purement local
+           reste purement local, comme avant ce correctif. */
+        if (target.serverId) {
+          void supprimerEmission(target.serverId).catch((err) => {
+            useAppStore.getState().toast({
+              title: "Suppression Django refusée",
+              message: `« ${program?.title ?? target.programId} » a été retiré localement mais pas de la base : ${String(err)}.`,
+              tone: "warning",
+            });
+          });
+        }
+
         return { ok: true, item: target };
       },
 
@@ -373,13 +507,24 @@ export const useScheduleStore = create<ScheduleState>()(
       },
     }),
     {
-      name: "balafon-schedule-v3",
+      /* CORRECTIF : v3 → v4. Purge les caches locaux déjà pollués par le
+         bug de synchronisation (émissions supprimées côté Django restées
+         dans la bibliothèque locale). Sans ce changement de clé, les
+         navigateurs déjà ouverts auraient conservé indéfiniment leur
+         ancien état, même après la mise à jour du code. */
+      name: "balafon-schedule-v4",
       partialize: (s) => ({
         programs: s.programs,
         scheduleMap: s.scheduleMap,
         grids: s.grids,
         logs: s.logs.slice(0, 200),
         seededFor: s.seededFor,
+        /* CORRECTIF : `source` n'était pas persistée. Au rechargement de
+           la page, elle revenait toujours à "demo", ce qui désarmait le
+           garde-fou de ensureSeed() (`if (get().source === "api") return`)
+           et permettait au jeu de démonstration d'écraser les données
+           réelles reçues de Django lors du prochain ensureSeed(). */
+        source: s.source,
       }),
     }
   )

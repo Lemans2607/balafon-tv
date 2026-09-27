@@ -365,7 +365,7 @@ export function PublicHome() {
                 <motion.li key={item.id} {...rise} transition={{ ...rise.transition, delay: i * 0.06 }}>
                   <Link
                     to={`/tv/program/${program!.id}`}
-                    className="group glass-hover relative flex items-center gap-5 py-4 pl-1 transition-colors duration-300 sm:gap-8 sm:py-5"
+                    className="group relative flex items-center gap-5 py-4 pl-1 transition-colors duration-300 hover:bg-white/[0.02] sm:gap-8 sm:py-5"
                   >
                     <span className="num-outline font-display w-16 shrink-0 text-[54px] leading-none sm:w-24 sm:text-[76px]" aria-hidden>
                       {String(i + 1).padStart(2, "0")}

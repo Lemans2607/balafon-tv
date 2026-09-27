@@ -1,56 +1,87 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
-import { fetchGrillesValidees, isBackendConfigured } from "../services/backend";
+import { fetchGrillesValidees, isBackendConfigured, type Reponse } from "../services/backend";
 import { useScheduleStore } from "../store/scheduleStore";
 import type { GrilleAPI } from "../utils/planbyAdapter";
 
 /* ============================================================
-   Stratégie de mise en cache React Query pour les grilles.
+   Stratégie de synchronisation de la grille              [CORRIGÉ]
 
-   Objectif : un diffuseur (régie) consulte TOUJOURS la dernière
-   grille chargée, même en cas de perte de connexion réseau.
+   Trois défauts corrigés par rapport à la version précédente :
 
-   - staleTime  : 5 min — les données restent « fraîches », pas de
-     refetch agressif à chaque montage de composant.
-   - gcTime     : 30 min — le cache survit au démontage, la grille
-     reste disponible hors-ligne dans la fenêtre de garde.
-   - networkMode: 'offlineFirst' — sert le cache quand le réseau
-     tombe, puis resynchronise au retour (`refetchOnReconnect`).
-   - À chaque succès, la grille est hydratée dans le store Zustand
-     (source de vérité de l'EPG), donc l'affichage persiste aussi.
+   1. `fetchGrillesValidees()` renvoyait `null` aussi bien pour
+      « backend injoignable » que pour « la base est vide » : une
+      grille vidée dans Django n'était donc jamais effacée côté
+      public. Le type `Reponse<T>` distingue maintenant les deux cas
+      (voir services/backend.ts et MODIFICATIONS.md).
+
+   2. `hydratedOnce.current` n'hydratait qu'une seule fois pour toute
+      la durée de vie de l'onglet : toute modification faite dans
+      Django après le chargement initial n'était JAMAIS reprise sans
+      rechargement complet de la page. Remplacé par un rafraîchissement
+      périodique + au retour de focus + à la reconnexion réseau.
+      L'invalidation immédiate sur alerte WebSocket est déclenchée
+      depuis App.tsx (voir Root()), qui possède déjà l'unique connexion
+      WebSocket de l'app (services/realtime.ts) : ce hook n'en ouvre
+      pas une seconde, pour éviter deux sockets concurrentes vers le
+      même /ws/alertes/.
+
+   3. Ce hook n'était appelé que par RegieControl.tsx — le reste de
+      l'app (portail public, App.tsx) hydratait séparément via son
+      propre effet ponctuel. App.tsx appelle désormais ce même hook :
+      une seule source de vérité, un seul cache React Query partagé
+      (clé CLE_GRILLES).
    ============================================================ */
 
-const STALE_TIME_MS = 5 * 60 * 1000;
-const GC_TIME_MS = 30 * 60 * 1000;
+export const CLE_GRILLES = ["grilles-validees"] as const;
 
 export function useGrilleQuery() {
-  const hydrate = useScheduleStore((s) => s.hydrateFromApi);
-  const hydratedOnce = useRef(false);
+  const hydrateFromApi = useScheduleStore((s) => s.hydrateFromApi);
+  const viderGrille = useScheduleStore((s) => s.viderGrille);
+  const actif = isBackendConfigured();
 
-  const query = useQuery<GrilleAPI[] | null>({
-    queryKey: ["grilles-validees"],
-    queryFn: () => (isBackendConfigured() ? fetchGrillesValidees() : Promise.resolve(null)),
-    staleTime: STALE_TIME_MS,
-    gcTime: GC_TIME_MS,
-    networkMode: "offlineFirst",
+  const query = useQuery<Reponse<GrilleAPI[]>>({
+    queryKey: CLE_GRILLES,
+    queryFn: fetchGrillesValidees,
+    enabled: actif,
+    refetchInterval: 45_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    refetchOnWindowFocus: false,
+    staleTime: 20_000,
     retry: 1,
+    networkMode: "always",
   });
 
-  /* Hydrate le store dès qu'un lot de grilles arrive (API ou cache). */
+  /* Applique le résultat au store — trois issues possibles. */
   useEffect(() => {
-    if (query.data && query.data.length > 0 && !hydratedOnce.current) {
-      hydrate(query.data);
-      hydratedOnce.current = true;
+    const r = query.data;
+    if (!r) return;
+    if (r.etat === "ok") {
+      hydrateFromApi(r.donnees);
+    } else if (r.etat === "vide") {
+      // « Vide » est un succès (base réellement vide) : on efface
+      // vraiment la grille, on ne retombe pas sur le cache local.
+      viderGrille("Aucune grille validée côté Django.");
+    } else {
+      console.warn("[BALAFON + GUIDE] Backend injoignable :", r.raison);
     }
-  }, [query.data, hydrate]);
+  }, [query.data, hydrateFromApi, viderGrille]);
 
   const horsLigne = typeof navigator !== "undefined" && !navigator.onLine;
   return {
     ...query,
-    /** Vrai si la grille affichée vient du cache (réseau perdu). */
-    depuisCache: query.isFetched && (horsLigne || query.fetchStatus === "idle"),
+    /** "demo" | "chargement" | "synchronise" | "vide" | "hors-ligne" — pour l'IU. */
+    etatSynchro: !actif
+      ? ("demo" as const)
+      : query.isPending
+        ? ("chargement" as const)
+        : query.data?.etat === "ok"
+          ? ("synchronise" as const)
+          : query.data?.etat === "vide"
+            ? ("vide" as const)
+            : ("hors-ligne" as const),
+    depuisCache: query.isFetched && horsLigne,
   };
 }

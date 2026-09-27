@@ -7,11 +7,11 @@ import { useAlertStore } from "../../store/alertStore";
 import { useVmixStore, VMIX_STATUS_META } from "../../store/vmixStore";
 import { buildSeedData } from "../../data/schedules";
 import { USERS } from "../../data/schedules";
-import { Badge, Button, Modal } from "../../components/ui";
+import { Badge, Button, Modal, SimClock } from "../../components/ui";
 import { fetchGrillesValidees, getApiBaseUrl, getWsUrl, isBackendConfigured } from "../../services/backend";
 
 export function SettingsPage() {
-  const { role, utilisateur } = useAuth();
+  const { role } = useAuth();
   const toast = useAppStore((s) => s.toast);
   const resetAll = useScheduleStore((s) => s.resetAll);
   const dataSource = useScheduleStore((s) => s.source);
@@ -29,45 +29,33 @@ export function SettingsPage() {
     setTesting(true);
     setTestResult(null);
     const t0 = performance.now();
-    const grilles = await fetchGrillesValidees();
+    const reponse = await fetchGrillesValidees();
     const ms = Math.round(performance.now() - t0);
     setTesting(false);
-    if (grilles) {
-      hydrateFromApi(grilles);
+
+    if (reponse.etat === "ok") {
+      hydrateFromApi(reponse.donnees);
       setTestResult({
         ok: true,
-        detail: `${grilles.length} grille(s) reçue(s) en ${ms} ms — EPG hydraté depuis Django.`,
+        detail: `${reponse.donnees.length} grille(s) reçue(s) en ${ms} ms — EPG hydraté depuis Django.`,
       });
       toast({ title: "Backend connecté", message: "Les grilles Django remplacent le jeu de démonstration.", tone: "success" });
+    } else if (reponse.etat === "vide") {
+      setTestResult({
+        ok: true,
+        detail: `Backend joignable en ${ms} ms, mais aucune grille validée — c'est un état normal, pas une panne.`,
+      });
     } else {
       setTestResult({
         ok: false,
         detail: isBackendConfigured()
-          ? `Backend injoignable sur ${apiBase} (réponse attendue : GET /api/grilles/?statut=validee). Mode démo local conservé.`
+          ? `${reponse.raison} Mode démo local conservé.`
           : "VITE_API_URL non défini (.env.local) — le mode démo local reste actif.",
       });
     }
   };
 
-  const profilDemo = USERS[role === "diffuseur" ? "regie" : "directeur"];
-  const nomAffiche =
-    utilisateur && (utilisateur.first_name || utilisateur.last_name)
-      ? `${utilisateur.first_name ?? ""} ${utilisateur.last_name ?? ""}`.trim()
-      : profilDemo.name;
-  const initiales =
-    nomAffiche
-      .split(" ")
-      .filter(Boolean)
-      .map((partie) => partie[0]?.toUpperCase())
-      .slice(0, 2)
-      .join("") || profilDemo.initials;
-  const roleLabel =
-    role === "directeur_antenne"
-      ? "Direction d’Antenne"
-      : role === "diffuseur"
-        ? "Régie · Diffusion"
-        : profilDemo.roleLabel;
-  const user = { name: nomAffiche, initials: initiales, roleLabel };
+  const user = USERS[role === "diffuseur" ? "regie" : "directeur"];
   const vMeta = VMIX_STATUS_META[vmix.status];
 
   const doReset = () => {
@@ -203,7 +191,7 @@ acknowledgeVmixAlert()     // POST /api/vmix/changes/:id/ack`}
           <pre className="overflow-x-auto rounded-xl border border-ink-600 bg-ink-950 p-4 font-mono text-[11px] leading-relaxed text-mist">
 {`GET  /api/grilles/?statut=validee  → EPG (adaptateur depuisApiBackend)
 GET  /api/chaines/                 → Balafon TV (portail public)
-POST /api/auth/connexion/          → JWT (SimpleJWT)
+POST /api/auth/token/              → JWT (SimpleJWT)
 WS   {VITE_WS_URL}                 → alertes Régie (Channels + Redis)
 
 Fallback automatique : backend injoignable ⇒ catalogue
@@ -227,6 +215,10 @@ embarqué + localStorage. Jamais d'écran vide.`}
           <RefreshCcw size={13} aria-hidden /> Réinitialiser les données
         </Button>
       </section>
+
+      <div className="md:col-span-2">
+        <SimClock />
+      </div>
 
       <Modal open={confirmReset} onClose={() => setConfirmReset(false)} title="Réinitialiser les données de démonstration ?" tone="critical">
         <p className="text-[13.5px] leading-relaxed text-mist">

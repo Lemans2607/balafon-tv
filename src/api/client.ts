@@ -16,9 +16,23 @@ function env(): Record<string, string | undefined> {
   >;
 }
 
-export const API_BASE_URL: string = (env().VITE_API_URL ?? env().VITE_API_BASE_URL ?? "").replace(
-  /\/+$/,
-  ""
+/**
+ * CORRECTIF : ce client pointait directement sur VITE_API_URL sans jamais
+ * vérifier le préfixe /api — exactement le même défaut que
+ * services/backend.ts (voir MODIFICATIONS.md, cause n°1). Le vrai
+ * .env.local du projet ne portait pas ce préfixe : toute requête
+ * (ajouterEmission, supprimerEmission, creerGrille…) tombait donc en 404.
+ * Normalisation défensive, au cas où .env.local serait de nouveau modifié
+ * sans le suffixe.
+ */
+function normaliserBaseUrl(brut: string): string {
+  const sansSlash = brut.replace(/\/+$/, "");
+  if (!sansSlash || /\/api$/.test(sansSlash)) return sansSlash;
+  return `${sansSlash}/api`;
+}
+
+export const API_BASE_URL: string = normaliserBaseUrl(
+  env().VITE_API_URL ?? env().VITE_API_BASE_URL ?? ""
 );
 
 export const WS_BASE_URL: string = env().VITE_WS_URL ?? "";
@@ -39,11 +53,8 @@ export const stockageJetons = {
   },
 };
 
-/** Toutes les routes DRF sont montées sous /api/ côté Django (voir urls.py). */
-export const API_ROOT_URL: string = API_BASE_URL ? `${API_BASE_URL}/api` : "";
-
 export const api: AxiosInstance = axios.create({
-  baseURL: API_ROOT_URL || undefined,
+  baseURL: API_BASE_URL ? `${API_BASE_URL.replace(/\/$/, "")}` : undefined,
   headers: { "Content-Type": "application/json" },
   timeout: 8000,
 });
@@ -54,7 +65,7 @@ let rafraichissementEnCours: Promise<string> | null = null;
 async function rafraichir(): Promise<string> {
   const refresh = stockageJetons.lireRefresh();
   if (!refresh) throw new Error("Aucun refresh token");
-  const { data } = await axios.post(`${API_ROOT_URL}/auth/rafraichir/`, { refresh });
+  const { data } = await axios.post(`${API_BASE_URL}/auth/rafraichir/`, { refresh });
   const access: string = data.access;
   const ancienRefresh: string = stockageJetons.lireRefresh() ?? refresh;
   stockageJetons.enregistrer(access, data.refresh ?? ancienRefresh);

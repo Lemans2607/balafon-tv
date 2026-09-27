@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { CalendarDays, Play } from "lucide-react";
+import { CalendarDays, Info, Play } from "lucide-react";
 import { useScheduleStore } from "../../store/scheduleStore";
 import { useNow } from "../../hooks/useNow";
 import { CATEGORY_META, type Program } from "../../types";
@@ -8,6 +8,7 @@ import { isoLocal, labelDay, sinceISO, tillISO } from "../../utils/time";
 import { EmptyState } from "../../components/ui";
 import { ProgramPoster } from "../../components/media/ProgramPoster";
 import { FakePlayer } from "../../components/media/FakePlayer";
+import { useSynopsis } from "../../components/epg/SynopsisDrawer";
 
 export function PublicReplay() {
   const programs = useScheduleStore((s) => s.programs);
@@ -15,21 +16,25 @@ export function PublicReplay() {
   const now = useNow(30000);
   const [playing, setPlaying] = useState<Program | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const ouvrirSynopsis = useSynopsis((s) => s.ouvrir);
 
   const replayables = useMemo(
     () => programs.filter((p) => p.isReplayAvailable && p.category !== "off-air"),
     [programs]
   );
 
+  /* Dernier passage à l'antenne par programme — on garde le ScheduleItem
+     complet (pas seulement {date, time}) pour pouvoir l'ouvrir dans le
+     tiroir synopsis avec ses horaires réels. */
   const lastBroadcast = useMemo(() => {
-    const map = new Map<string, { date: string; time: string }>();
+    const map = new Map<string, (typeof scheduleMap)[string][number]>();
     const nowIso = isoLocal(now);
     const dates = Object.keys(scheduleMap).sort().reverse();
     for (const date of dates) {
       for (const it of scheduleMap[date]) {
         if (map.has(it.programId)) continue;
         const till = tillISO(it);
-        if (till <= nowIso) map.set(it.programId, { date: it.date, time: it.startTime });
+        if (till <= nowIso) map.set(it.programId, it);
       }
     }
     return map;
@@ -112,13 +117,28 @@ export function PublicReplay() {
                     </span>
                   </button>
                   <div className="p-3.5">
-                    <h2 className="truncate text-[14px] font-extrabold text-paper">{p.title}</h2>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        last &&
+                        ouvrirSynopsis({
+                          item: last,
+                          program: p,
+                          mode: "replay",
+                          diffuseLe: `${labelDay(last.date, { short: true })} · ${last.startTime}`,
+                        })
+                      }
+                      className="group/info flex w-full items-start justify-between gap-2 text-left"
+                    >
+                      <h2 className="truncate text-[14px] font-extrabold text-paper">{p.title}</h2>
+                      <Info size={14} className="mt-0.5 shrink-0 text-mist-dark opacity-0 transition-opacity group-hover/info:opacity-100" />
+                    </button>
                     <p className="mt-1 flex items-center gap-1.5 text-[11px] text-mist-dark">
                       <CalendarDays size={11} aria-hidden />
                       {last ? (
                         <>
                           Dernière diffusion · {labelDay(last.date, { short: true })} à{" "}
-                          <span className="font-mono tabular-nums">{last.time}</span>
+                          <span className="font-mono tabular-nums">{last.startTime}</span>
                         </>
                       ) : (
                         "Première diffusion à venir"

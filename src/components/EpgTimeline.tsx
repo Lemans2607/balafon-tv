@@ -15,9 +15,9 @@ import {
   slotsPour,
   toHHMM,
 } from "../utils/epg";
-import { useTheme } from "../state/themeStore";
+import { useThemeStore } from "../store/themeStore";
 import { epgThemePour } from "./planbyTheme";
-import { useToast } from "./shared";
+import { useAppStore } from "../store/appStore";
 
 export const CAT_ICONS = {
   information: Newspaper,
@@ -79,9 +79,9 @@ export interface TimelineJourProps {
  */
 export function TimelineJour({ grilleId, jourIdx, mode, acteur, playhead = false, onDetail }: TimelineJourProps) {
   const { db, placer, retirer, dragInfo, setDragInfo } = useStudio();
-  const { theme } = useTheme();
+  const theme = useThemeStore((s) => s.theme);
   const ep = epgThemePour(theme);
-  const toast = useToast();
+  const pushToast = useAppStore((s) => s.toast);
   const [hover, setHover] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -127,7 +127,7 @@ export function TimelineJour({ grilleId, jourIdx, mode, acteur, playhead = false
     if (!programmeId) return;
 
     const res = placer(grilleId, jourIdx, slot, programmeId, acteur, from);
-    if (!res.ok) toast.push({ type: "erreur", titre: "Placement impossible", message: res.raison });
+    if (!res.ok) pushToast({ tone: "error", title: "Placement impossible", message: res.raison });
     setDragInfo(null);
   };
 
@@ -289,7 +289,7 @@ export function TimelineJour({ grilleId, jourIdx, mode, acteur, playhead = false
                           onClick={(e) => {
                             e.stopPropagation();
                             retirer(grilleId, jourIdx, b.id, acteur ?? "admin");
-                            toast.push({ type: "info", titre: "Programme retiré", message: prog.titre });
+                            pushToast({ tone: "info", title: "Programme retiré", message: prog.titre });
                           }}
                           className="grid place-items-center w-6 h-6 rounded bg-bred/85 text-white hover:bg-bred transition-colors"
                           title="Retirer du créneau"

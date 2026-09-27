@@ -1,5 +1,6 @@
 import type { Program, ProgramCategory } from "../types";
 import { CATEGORY_META } from "../types";
+import type { GenreEmission } from "../api/types";
 import { dureeParGenre, type EmissionCatalogueDemo } from "../utils/planbyAdapter";
 import { CATALOGUE_EMISSIONS_BALAFON_TV } from "./emissions_reelles_balafon_tv";
 
@@ -39,6 +40,26 @@ export const GENRE_TO_CATEGORY: Record<string, ProgramCategory> = {
   telerealite: "entertainment",
   "mag-promo": "commercial",
   serie: "series",
+};
+
+/**
+ * Sens inverse de GENRE_TO_CATEGORY — nécessaire pour que le Studio puisse
+ * écrire une émission vers Django (POST/PATCH /api/emissions/), dont le
+ * champ `genre` suit l'énumération backend (GenreEmission), différente de
+ * ProgramCategory côté frontend. Utilisé par scheduleStore.addScheduleItem.
+ */
+export const CATEGORY_TO_GENRE: Record<ProgramCategory, GenreEmission> = {
+  news: "info",
+  talk: "talk",
+  entertainment: "divertissement",
+  culture: "culture",
+  sport: "sport",
+  documentary: "magazine",
+  series: "serie",
+  music: "musique",
+  commercial: "autre",
+  rerun: "autre",
+  "off-air": "autre",
 };
 
 /* ============================================================

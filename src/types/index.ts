@@ -58,6 +58,10 @@ export interface ScheduleItem {
   source: "admin" | "director" | "import";
   lastModifiedBy?: string;
   updatedAt: string; // ISO
+  /** Identifiant de l'Emission Django, présent uniquement pour les créneaux
+   *  hydratés depuis l'API. Permet au Studio d'écrire vers le backend
+   *  (PATCH/DELETE) sans re-résoudre l'identifiant serveur. */
+  serverId?: number;
 }
 
 export interface GridInfo {
@@ -66,6 +70,9 @@ export interface GridInfo {
   author: string;
   updatedAt: string;
   published?: boolean;
+  /** Identifiant de la Grille Django, présent uniquement pour les journées
+   *  hydratées depuis l'API. */
+  serverId?: number;
 }
 
 export interface Alert {
