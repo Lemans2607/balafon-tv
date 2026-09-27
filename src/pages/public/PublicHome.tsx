@@ -89,7 +89,7 @@ export function PublicHome() {
           <div className="scanline" />
         </div>
 
-        {/* Bug antenne + horloge */}
+        {/* Bug antenne */}
         <div className="absolute right-5 top-24 z-10 flex flex-col items-end gap-2.5 sm:right-8 sm:top-28">
           <span className="flex items-center gap-2.5 rounded-lg border border-white/10 bg-ink-950/70 px-3.5 py-2 backdrop-blur-md">
             <img src={BALAFON_LOGO_URI} alt="" className="h-5 w-5 rounded" aria-hidden />
@@ -98,11 +98,8 @@ export function PublicHome() {
             </span>
           </span>
           <span className="rounded-lg border border-white/10 bg-ink-950/70 px-3 py-1.5 text-right backdrop-blur-md">
-            <span className="block font-mono text-[20px] font-bold leading-none tabular-nums text-paper">
-              {formatClock(now)}
-            </span>
-            <span className="mt-1 block font-mono text-[8.5px] uppercase tracking-[0.24em] text-mist">
-              Canal 04 · Douala · WAT
+            <span className="block font-mono text-[10px] uppercase tracking-[0.24em] text-mist">
+              Canal 04 · Douala
             </span>
           </span>
         </div>
