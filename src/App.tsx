@@ -1,6 +1,6 @@
 import { Component, lazy, Suspense, useEffect, type ReactNode } from "react";
 import { HashRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 
@@ -9,15 +9,16 @@ import { PublicFooter } from "./components/layout/PublicFooter";
 import { StaffShell } from "./components/layout/StaffShell";
 import { PublicHome } from "./pages/public/PublicHome";
 import { ToastHost } from "./components/ui";
+import { SynopsisDrawer } from "./components/epg/SynopsisDrawer";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/Auth/ProtectedRoute";
 import { useScheduleStore } from "./store/scheduleStore";
+import { useGrilleQuery, CLE_GRILLES } from "./hooks/useGrilleQuery";
 import { useAlertStore } from "./store/alertStore";
 import { useAppStore } from "./store/appStore";
 import { useThemeStore } from "./store/themeStore";
 import { buildSeedData } from "./data/schedules";
 import { todayKey } from "./utils/time";
-import { fetchGrillesValidees, isBackendConfigured } from "./services/backend";
 import { connectAlertStream } from "./services/realtime";
 
 /* ============================================================
@@ -40,6 +41,7 @@ const ProgramLibrary = lazy(() => import("./pages/staff/ProgramLibrary").then((m
 const AlertCenter = lazy(() => import("./pages/staff/AlertCenter").then((m) => ({ default: m.AlertCenter })));
 const GridHistory = lazy(() => import("./pages/staff/GridHistory").then((m) => ({ default: m.GridHistory })));
 const SettingsPage = lazy(() => import("./pages/staff/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const AudiencePage = lazy(() => import("./pages/staff/AudiencePage").then((m) => ({ default: m.AudiencePage })));
 
 /* Écran de chargement Balafon — jamais d'écran noir. */
 export function BootLoader({ label = "Chargement de l'antenne…" }: { label?: string }) {
@@ -102,7 +104,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
               <button
                 type="button"
                 onClick={() => {
-                  localStorage.removeItem("balafon-schedule-v3");
+                  localStorage.removeItem("balafon-schedule-v4");
                   localStorage.removeItem("balafon-app-v1");
                   window.location.reload();
                 }}
@@ -204,12 +206,26 @@ function Root() {
     el.style.colorScheme = theme;
   }, [theme]);
 
-  /* ============================================================
-     Amorçage :
-     1. démo locale (catalogue embarqué) — toujours disponible ;
-     2. si VITE_API_URL répond → hydratation depuis Django ;
-     3. si VITE_WS_URL est défini → flux d'alertes temps réel.
-     ============================================================ */
+  /* ── CORRECTIF ──────────────────────────────────────────────────────
+     La grille suit désormais Django en continu via useGrilleQuery()
+     (rafraîchissement périodique + au retour de focus + invalidation
+     WebSocket immédiate). L'ancien effet ci-dessous ne faisait qu'un
+     hydratation ponctuelle au montage : toute modification faite dans
+     Django après le chargement initial n'était jamais reprise sans
+     recharger la page entière. Voir MODIFICATIONS.md, causes n°1 à 5.
+
+     Ce même hook est aussi appelé par RegieControl.tsx : les deux
+     partagent la même clé de cache React Query, une seule requête est
+     réellement faite. ────────────────────────────────────────────── */
+  useGrilleQuery();
+
+  /* Amorçage : démo locale (catalogue embarqué) + alertes temps réel.
+     Cette même connexion WebSocket alimente à la fois le centre
+     d'alertes (alertStore) ET l'invalidation de la grille : toute
+     alerte reçue signifie qu'une émission ou une grille a changé côté
+     Django (voir programmation/signals.py), donc qu'un nouveau fetch
+     est nécessaire — inutile d'ouvrir une seconde connexion pour ça. */
+  const queryClient = useQueryClient();
   useEffect(() => {
     let stopStream: (() => void) | undefined;
     let cancelled = false;
@@ -222,23 +238,10 @@ function Root() {
         const app = useAppStore.getState();
         if (app.selectedDate < todayKey()) app.setSelectedDate(todayKey());
 
-        if (isBackendConfigured()) {
-          const grilles = await fetchGrillesValidees();
-          if (!cancelled && grilles) {
-            useScheduleStore.getState().hydrateFromApi(grilles);
-            console.info("[BALAFON + GUIDE] EPG hydraté depuis l'API Django.");
-          }
-        }
-
-        stopStream = connectAlertStream((payload) => {
+        stopStream = connectAlertStream((alert) => {
           if (cancelled) return;
-          useAlertStore.getState().addAlert({
-            severity: payload.severite ?? "info",
-            title: payload.titre ?? payload.title ?? "Alerte temps réel",
-            message: payload.message ?? "Notification reçue du backend (WebSocket).",
-            source: payload.source ?? "system",
-            actionRequired: (payload.severite ?? "info") === "critical",
-          });
+          useAlertStore.getState().addAlert(alert);
+          void queryClient.invalidateQueries({ queryKey: CLE_GRILLES });
         });
       } catch (e) {
         console.error("[BALAFON + GUIDE] Erreur d'amorçage des données :", e);
@@ -250,7 +253,7 @@ function Root() {
       cancelled = true;
       stopStream?.();
     };
-  }, []);
+  }, [queryClient]);
 
   return (
     <HashRouter>
@@ -287,6 +290,7 @@ function Root() {
             }
           />
           <Route path="regie" element={page("Régie", <RegieControl />)} />
+          <Route path="audience" element={page("Audience", <AudiencePage />)} />
           <Route path="programmes" element={page("Bibliothèque", <ProgramLibrary />)} />
           <Route path="alertes" element={page("Alertes", <AlertCenter />)} />
           <Route path="historique" element={page("Historique", <GridHistory />)} />
@@ -295,6 +299,7 @@ function Root() {
         </Route>
         <Route path="*" element={<Navigate to="/tv" replace />} />
       </Routes>
+      <SynopsisDrawer />
       <ToastHost />
     </HashRouter>
   );

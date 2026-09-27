@@ -26,7 +26,10 @@ export const schemaUtilisateur = z.object({
   email: z
     .string()
     .trim()
-    .email("Adresse email invalide."),
+    .email("Adresse email invalide.")
+    .refine((v) => v.endsWith("@balafon.media"), {
+      message: "Seuls les emails @balafon.media sont acceptés.",
+    }),
   role: z.enum(["directeur", "regie"]),
   fonction: z.string().trim(),
 });
