@@ -1,0 +1,40 @@
+# BALAFON + GUIDE — PostgreSQL + Redis en local
+#   docker compose up -d
+#   docker ps  → balafon_guide_db + balafon_guide_redis
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: balafon_guide_db
+    environment:
+      # CORRECTIF : ces valeurs ne correspondaient pas à .env.example
+      # (DB_NAME=balafon_tv, DB_USER=postgres, DB_PASSWORD vide) — quiconque
+      # lançait `docker compose up -d` puis `manage.py migrate` avec les
+      # valeurs par défaut se serait connecté à une base/utilisateur
+      # inexistants. Alignées ici sur .env.example, qui documente ces
+      # valeurs comme celles du cahier des charges.
+      POSTGRES_DB: balafon_tv
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d balafon_tv"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: balafon_guide_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
